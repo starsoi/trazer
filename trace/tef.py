@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC
 import json
 
@@ -6,7 +7,7 @@ class Tracer(object):
     def __init__(self):
         self.events = []
 
-    def add_event(self, event):
+    def add_event(self, event: TraceEvent):
         self.events.append(event)
 
     @property
@@ -22,7 +23,7 @@ class Tracer(object):
 
 
 class TraceEvent(ABC):
-    def __init__(self, name, ts, pid=0, tid=0, **kwargs):
+    def __init__(self, name: str, ts: int, pid: int = 0, tid: int = 0, **kwargs):
         self.name = name
         self.ts = ts * 1e6  # unit in trace event format is micro-second
         self.pid = pid
