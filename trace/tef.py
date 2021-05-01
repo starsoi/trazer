@@ -24,7 +24,6 @@ class Tracer(object):
 class TraceEvent(ABC):
     def __init__(self, name, ts, pid=0, tid=0, **kwargs):
         self.name = name
-        self.ph = self.__class__.ph
         self.ts = ts * 1e6  # unit in trace event format is micro-second
         self.pid = pid
         self.tid = tid
@@ -32,7 +31,7 @@ class TraceEvent(ABC):
 
     @property
     def tef(self):
-        return {k: v for k, v in self.__dict__.items()}
+        return {k: v for k, v in {**self.__dict__, **self.__class__.__dict__}.items() if not k.startswith('_')}
 
 
 class TraceEventDurationBegin(TraceEvent):
