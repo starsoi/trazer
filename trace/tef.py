@@ -1,5 +1,6 @@
 import json
 
+
 class Tracer(object):
     def __init__(self):
         self.events = []
@@ -29,25 +30,19 @@ class TraceEvent(object):
 
     @property
     def tef(self):
-        return {'name': self.name,
-                'ph': self._ph,
-                'ts': self.ts,
-                'pid': self.pid,
-                'tid': self.tid,
-                'args': self.args
-                }
+        return {k: v for k, v in self.__dict__.items()}
 
 
 class TraceEventDurationBegin(TraceEvent):
-    _ph = 'B'
+    ph = 'B'
 
 
 class TraceEventDurationEnd(TraceEvent):
-    _ph = 'E'
+    ph = 'E'
 
 
 class TraceEventCounter(TraceEvent):
-    _ph = 'C'
+    ph = 'C'
 
     def __init__(self, name, ts, value, pid=0, tid=0):
         super().__init__(name, ts, pid, tid)
