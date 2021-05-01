@@ -1,3 +1,4 @@
+from abc import ABC
 import json
 
 
@@ -20,13 +21,14 @@ class Tracer(object):
         return json.dumps(self.tef, indent=4)
 
 
-class TraceEvent(object):
-    def __init__(self, name, ts, pid=0, tid=0):
+class TraceEvent(ABC):
+    def __init__(self, name, ts, pid=0, tid=0, **kwargs):
         self.name = name
+        self.ph = self.__class__.ph
         self.ts = ts * 1e6  # unit in trace event format is micro-second
         self.pid = pid
         self.tid = tid
-        self.args = {}
+        self.args = kwargs
 
     @property
     def tef(self):
@@ -47,3 +49,8 @@ class TraceEventCounter(TraceEvent):
     def __init__(self, name, ts, value, pid=0, tid=0):
         super().__init__(name, ts, pid, tid)
         self.args.update({name: value})
+
+
+class TraceEventInstant(TraceEvent):
+    ph = 'i'
+    s = 'g'
