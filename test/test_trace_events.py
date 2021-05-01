@@ -55,6 +55,22 @@ class TestTraceEvents(unittest.TestCase):
         event = TraceEventDurationEnd('event', 0, custom_attr1='foo', custom_attr2=100)
         self.assertDictEqual(event.tef['args'], {'custom_attr1': 'foo', 'custom_attr2': 100})
 
+    def test_json_export(self):
+        import json
+        tracer = Tracer()
+        event1_begin = TraceEventDurationBegin('event1', 0.001)
+        event1_end = TraceEventDurationEnd('event1', 0.002)
+        event2 = TraceEventInstant('event2', 0.003)
+
+        tracer.add_event(event1_begin)
+        tracer.add_event(event1_end)
+        tracer.add_event(event2)
+
+        readback = json.loads(tracer.json)
+        self.assertDictEqual(readback['traceEvents'][0], event1_begin.tef)
+        self.assertDictEqual(readback['traceEvents'][1], event1_end.tef)
+        self.assertDictEqual(readback['traceEvents'][2], event2.tef)
+
 
 if __name__ == '__main__':
     unittest.main()
