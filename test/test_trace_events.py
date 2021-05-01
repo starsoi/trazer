@@ -29,6 +29,14 @@ class TestTraceEvents(unittest.TestCase):
         self.assertTrue(hasattr(event, 's'))
         self.assertEqual(event.ts, ts * 1e6)
 
+    def test_counter_event(self):
+        ts = 123
+        event_name = 'counter-event'
+        counter_value = 999
+        event = TraceEventCounter(event_name, ts, counter_value)
+        self.assertEqual(event.ph, 'C')
+        self.assertDictEqual(event.tef, {**event.tef, 'args': {event_name: counter_value}})
+
     def test_event_sequence(self):
         tracer = Tracer()
         event1_begin = TraceEventDurationBegin('event1', 123)
@@ -42,6 +50,10 @@ class TestTraceEvents(unittest.TestCase):
         self.assertIs(tracer.events[0], event1_begin)
         self.assertIs(tracer.events[1], event1_end)
         self.assertIs(tracer.events[2], event2)
+
+    def test_custom_attributes(self):
+        event = TraceEventDurationEnd('event', 0, custom_attr1='foo', custom_attr2=100)
+        self.assertDictEqual(event.tef['args'], {'custom_attr1': 'foo', 'custom_attr2': 100})
 
 
 if __name__ == '__main__':
