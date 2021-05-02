@@ -52,12 +52,30 @@ class TestTraceEvents(unittest.TestCase):
     def test_event_name_validation(self):
         tracer = Tracer()
         trace_analyzer = TraceAnalyzer(tracer)
+        self.assertIsNone(trace_analyzer._validate_event_name(['e', 'evt', 'event_name']))
         with self.assertRaises(ValueError):
             trace_analyzer._validate_event_name(['event-name'])
         with self.assertRaises(ValueError):
             trace_analyzer._validate_event_name(['eventname+'])
         with self.assertRaises(ValueError):
             trace_analyzer._validate_event_name(['!eventname'])
+        with self.assertRaises(ValueError):
+            trace_analyzer._validate_event_name(['*'])
+
+    def test_encode_valid_event_pattern(self):
+        tracer = self.setup_tracer(n_events=3)
+        trace_analyzer = TraceAnalyzer(tracer)
+        self.assertEqual('A+', trace_analyzer._encode_event_pattern('event000+'))
+        self.assertEqual('A+B-', trace_analyzer._encode_event_pattern('event000+event001-'))
+        self.assertEqual(r'A+((\w+)(\W))*C-', trace_analyzer._encode_event_pattern('event000+*event002-'))
+
+    def test_encode_invalid_event_pattern(self):
+        tracer = self.setup_tracer(n_events=3)
+        trace_analyzer = TraceAnalyzer(tracer)
+        with self.assertRaises(ValueError):
+            trace_analyzer._encode_event_pattern('event000$')
+        with self.assertRaises(ValueError):
+            trace_analyzer._encode_event_pattern('e0+e0-')
 
 
 if __name__ == '__main__':

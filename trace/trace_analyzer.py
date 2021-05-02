@@ -13,7 +13,10 @@ class TraceAnalyzer(object):
         TraceEventDurationBegin: '+',
         TraceEventDurationEnd: '-',
     }
-    event_type_default_code: str = '!'
+    event_type_default_code = '!'
+    event_type_wildcard = '*'
+
+    _re_event = re.compile(r'(\w+)(\W)')
 
     def __init__(self, tracer: Tracer):
         self.tracer = tracer
@@ -21,15 +24,12 @@ class TraceAnalyzer(object):
         self.events_string: str = self._create_events_string()
 
     def _validate_event_name(self, event_names) -> None:
-        """
+        """Validates all the event names and raises ValueError if any invalid event name is found in the trace.
         Trace Analyzer has some limitation to the allowed characters in the event name, i.e. all symbols used for the
         `event_type_codes` are not allowed to appear in the event name.
-        This function validates all the event names and raises ValueError if any invalid event name is found in the
-        trace.
         :return: None
         """
-        invalid_characters = set(self.event_type_codes.values())
-        invalid_characters.add(self.event_type_default_code)
+        invalid_characters = {*self.event_type_codes.values(), self.event_type_default_code, self.event_type_wildcard}
         for event_name in event_names:
             if not invalid_characters.isdisjoint(event_name):
                 raise ValueError(
@@ -37,8 +37,7 @@ class TraceAnalyzer(object):
                 )
 
     def _create_event_name_codes(self) -> Dict[str, str]:
-        """
-        Encode event names into short alphabetic letters.
+        """Encode event names into short alphabetic letters.
         The case-sensitive letters A-Z and a-z are used, which are used to represent 1st-26th and 27th-52th event names.
         For example,
             'event1' -> 'A',
@@ -79,8 +78,7 @@ class TraceAnalyzer(object):
         return dict(zip(event_names, codes))
 
     def _create_events_string(self) -> str:
-        """
-        Represent the event sequence using a string, using the following rules.
+        """Represent the event sequence using a string, using the following rules.
           * The event names are represented using the alphabetic codes.
           * The duration begin event has a suffix '+'
           * The duration end event has a suffix '-'
@@ -100,9 +98,31 @@ class TraceAnalyzer(object):
             events_string += event_name_code + event_type_code
         return events_string
 
-    def merge_events(self, event_pattern: str, merged_event_name: str, pid=1000) -> None:
+    def _encode_event_pattern(self, event_pattern: str) -> str:
+        """Replace the event name in the ``event_pattern`` with their respective alphabetic code.
+        :param event_pattern: a string for matching an event sequence
+        :return: the encoded event pattern
         """
-        Create a new event for a specific event sequence matching the given `event_pattern`.
+        encoded_event_pattern = event_pattern
+        for m in self._re_event.finditer(event_pattern):
+            event_name, event_type_code = m.group(1), m.group(2)
+            if event_name not in self.event_name_codes:
+                raise ValueError(f'Event name "{event_name}" not found in the trace.')
+            if event_type_code not in [*self.event_type_codes.values(), self.event_type_default_code]:
+                raise ValueError(f'Invalid character "{event_type_code}" in the pattern "{event_pattern}".')
+
+            event_name_code = self.event_name_codes[event_name]
+            encoded_event_pattern = encoded_event_pattern.replace(event_name, event_name_code)
+
+        if self.event_type_wildcard in encoded_event_pattern:
+            encoded_event_pattern = encoded_event_pattern.replace(
+                self.event_type_wildcard, f'({self._re_event.pattern})*'
+            )
+
+        return encoded_event_pattern
+
+    def merge_events(self, event_pattern: str, merged_event_name: str, pid=1000) -> None:
+        """Create a new event for a specific event sequence matching the given ``event_pattern``.
         The new event is typically assigned to a different pid than the original events.
 
         For example, we have an event sequence for processing a network message:
