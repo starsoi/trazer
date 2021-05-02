@@ -49,6 +49,16 @@ class TestTraceEvents(unittest.TestCase):
         trace_analyzer = TraceAnalyzer(tracer)
         self.assertEqual(trace_analyzer.events_string, 'A+B+C+C-B-A-D!')
 
+    def test_event_name_validation(self):
+        tracer = Tracer()
+        trace_analyzer = TraceAnalyzer(tracer)
+        with self.assertRaises(ValueError):
+            trace_analyzer._validate_event_name(['event-name'])
+        with self.assertRaises(ValueError):
+            trace_analyzer._validate_event_name(['eventname+'])
+        with self.assertRaises(ValueError):
+            trace_analyzer._validate_event_name(['!eventname'])
+
 
 if __name__ == '__main__':
     unittest.main()

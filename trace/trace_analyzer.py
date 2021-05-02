@@ -1,4 +1,5 @@
 import math
+import re
 from typing import Dict, Type
 from trace.tef import *
 
@@ -18,6 +19,22 @@ class TraceAnalyzer(object):
         self.tracer = tracer
         self.event_name_codes: Dict[str, str] = self._create_event_name_codes()
         self.events_string: str = self._create_events_string()
+
+    def _validate_event_name(self, event_names) -> None:
+        """
+        Trace Analyzer has some limitation to the allowed characters in the event name, i.e. all symbols used for the
+        `event_type_codes` are not allowed to appear in the event name.
+        This function validates all the event names and raises ValueError if any invalid event name is found in the
+        trace.
+        :return: None
+        """
+        invalid_characters = set(self.event_type_codes.values())
+        invalid_characters.add(self.event_type_default_code)
+        for event_name in event_names:
+            if not invalid_characters.isdisjoint(event_name):
+                raise ValueError(
+                    f'Invalid event name: "{event_name}". Characters ({", ".join(invalid_characters)}) are not allowed.'
+                )
 
     def _create_event_name_codes(self) -> Dict[str, str]:
         """
@@ -42,6 +59,7 @@ class TraceAnalyzer(object):
         n_event_names = len(event_names)
         if n_event_names == 0:
             return {}
+        self._validate_event_name(event_names)
 
         n_codes_per_event_name = math.ceil(math.log(n_event_names, CODE_BASE)) if n_event_names > 1 else 1
         codes = [''] * n_event_names
@@ -88,21 +106,21 @@ class TraceAnalyzer(object):
         The new event is typically assigned to a different pid than the original events.
 
         For example, we have an event sequence for processing a network message:
-        [0.001 s]: Begin receive-request-msg
-        [0.002 s]: Begin process-request-msg
-        [0.003 s]: End   process-request-msg
-        [0.004 s]: Begin prepare-response-msg
-        [0.005 s]: End   prepare-response-msg
-        [0.006 s]: Begin send-response-msg
-        [0.007 s]: End   send-response-msg
-        [0.008 s]: End   receive-request-msg
+        [0.001 s]: Begin receive_request_msg
+        [0.002 s]: Begin process_request_msg
+        [0.003 s]: End   process_request_msg
+        [0.004 s]: Begin prepare_response_msg
+        [0.005 s]: End   prepare_response_msg
+        [0.006 s]: Begin send_response_msg
+        [0.007 s]: End   send_response_msg
+        [0.008 s]: End   receive_request_msg
         The events are stored in the `network_tracer` object.
 
         If we focus on the duration of request and response, respectively, we can merge the request-related events
         into an request-event and response-related events into an response-event by calling
         >>> trace_analyzer = TraceAnalyzer(network_tracer)
-        >>> trace_analyzer.merge_events('receive-request-msg+*process-request-msg-', 'request-event')
-        >>> trace_analyzer.merge_events('prepare-response-msg+*receive-request-msg-', 'response-event')
+        >>> trace_analyzer.merge_events('receive_request_msg+*process_request_msg-', 'request_event')
+        >>> trace_analyzer.merge_events('prepare_response_msg+*receive_request_msg-', 'response_event')
 
         Usage of symbols in `event_pattern`:
         '+' following an event name: the event begins
