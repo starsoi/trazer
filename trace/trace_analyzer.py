@@ -20,6 +20,7 @@ class TraceAnalyzer(object):
 
     def __init__(self, tracer: Tracer):
         self.tracer = tracer
+        self._n_codes_per_event_name = 0
         self.event_name_codes: Dict[str, str] = self._create_event_name_codes()
         self.events_string: str = self._create_events_string()
 
@@ -60,14 +61,14 @@ class TraceAnalyzer(object):
             return {}
         self._validate_event_name(event_names)
 
-        n_codes_per_event_name = math.ceil(math.log(n_event_names, CODE_BASE)) if n_event_names > 1 else 1
+        self._n_codes_per_event_name = math.ceil(math.log(n_event_names, CODE_BASE)) if n_event_names > 1 else 1
         codes = [''] * n_event_names
 
         # Calculate the code (alphabetic letter) for each event name
         for i in range(n_event_names):
             code = ''
             q = i
-            for j in range(n_codes_per_event_name):
+            for j in range(self._n_codes_per_event_name):
                 q, r = q // CODE_BASE, q % CODE_BASE
                 ascii_code = ASCII_OFFSET + r
                 if ascii_code > ord('Z'):  # Skip the ASCII between Z and a
@@ -123,9 +124,10 @@ class TraceAnalyzer(object):
             event_name_code = self.event_name_codes[event_name]
             encoded_event_pattern = encoded_event_pattern.replace(event_name, event_name_code)
 
+        # Replace all wildcard with the general event pattern.
         if self.event_type_wildcard in encoded_event_pattern:
             encoded_event_pattern = encoded_event_pattern.replace(
-                self.event_type_wildcard, f'({self._re_event.pattern})*'
+                self.event_type_wildcard, f'([a-zA-Z]{{{self._n_codes_per_event_name}}}\\W)*'
             )
 
         return encoded_event_pattern

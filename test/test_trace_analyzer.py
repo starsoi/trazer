@@ -67,8 +67,8 @@ class TestTraceEvents(unittest.TestCase):
         trace_analyzer = TraceAnalyzer(tracer)
         self.assertEqual('A+', trace_analyzer._encode_event_pattern('event000+'))
         self.assertEqual('A+B-', trace_analyzer._encode_event_pattern('event000+event001-'))
-        self.assertEqual(r'A+((\w+)(\W))*C-', trace_analyzer._encode_event_pattern('event000+*event002-'))
-        self.assertEqual(r'A+((\w+)(\W))*', trace_analyzer._encode_event_pattern('event000+*'))
+        self.assertEqual(r'A+([a-zA-Z]{1}\W)*C-', trace_analyzer._encode_event_pattern('event000+*event002-'))
+        self.assertEqual(r'A+([a-zA-Z]{1}\W)*', trace_analyzer._encode_event_pattern('event000+*'))
 
     def test_encode_invalid_event_pattern(self):
         tracer = self.setup_tracer(n_events=3)
@@ -81,6 +81,7 @@ class TestTraceEvents(unittest.TestCase):
             trace_analyzer._encode_event_pattern('e0+e0-')
         with self.assertRaises(ValueError):
             trace_analyzer._encode_event_pattern('event000+event111')
+
 
 if __name__ == '__main__':
     unittest.main()
