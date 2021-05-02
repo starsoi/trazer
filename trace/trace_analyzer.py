@@ -103,13 +103,22 @@ class TraceAnalyzer(object):
         :param event_pattern: a string for matching an event sequence
         :return: the encoded event pattern
         """
+        matches = list(self._re_event.finditer(event_pattern))
+        if len(matches) == 0:
+            raise ValueError(f'Invalid event pattern "{event_pattern}"')
+
+        last_match = matches[-1]
+        # Last match does not end at the last character of the event pattern and last character is not wildcard.
+        if last_match.end() < len(event_pattern) and event_pattern[-1] != self.event_type_wildcard:
+            raise ValueError(f'Invalid event pattern "{event_pattern[last_match.end():]}"')
+
         encoded_event_pattern = event_pattern
-        for m in self._re_event.finditer(event_pattern):
+        for m in matches:
             event_name, event_type_code = m.group(1), m.group(2)
             if event_name not in self.event_name_codes:
                 raise ValueError(f'Event name "{event_name}" not found in the trace.')
             if event_type_code not in [*self.event_type_codes.values(), self.event_type_default_code]:
-                raise ValueError(f'Invalid character "{event_type_code}" in the pattern "{event_pattern}".')
+                raise ValueError(f'Invalid character "{event_type_code}" in the event pattern "{event_pattern}".')
 
             event_name_code = self.event_name_codes[event_name]
             encoded_event_pattern = encoded_event_pattern.replace(event_name, event_name_code)
@@ -146,6 +155,12 @@ class TraceAnalyzer(object):
         '+' following an event name: the event begins
         '-' following an event name: the event ends
         '*': arbitrary events
+
+        The resulted merged event sequence will be:
+        [0.001 s]: Begin request_event
+        [0.003 s]: End   request_event
+        [0.004 s]: Begin response_event
+        [0.008 s]: End   response_event
 
         :param event_pattern: a string for matching an event sequence
         :param merged_event_name: the name of the new event for the matched event sequence
