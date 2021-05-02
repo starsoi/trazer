@@ -1,11 +1,12 @@
 from __future__ import annotations
+from typing import List
 from abc import ABC
 import json
 
 
 class Tracer(object):
     def __init__(self):
-        self.events = []
+        self.events: List[TraceEvent] = []
 
     def add_event(self, event: TraceEvent):
         self.events.append(event)
@@ -32,7 +33,8 @@ class TraceEvent(ABC):
 
     @property
     def tef(self):
-        return {k: v for k, v in {**self.__dict__, **self.__class__.__dict__}.items() if not k.startswith('_')}
+        return {k: v for k, v in {**self.__dict__, **self.__class__.__dict__}.items()
+                if not k.startswith('_') and k != 'tef'}
 
 
 class TraceEventDurationBegin(TraceEvent):

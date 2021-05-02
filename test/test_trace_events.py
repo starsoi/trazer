@@ -3,11 +3,17 @@ from trace.tef import *
 
 
 class TestTraceEvents(unittest.TestCase):
+    def test_trace_event_base_tef(self):
+        event = TraceEvent('event-name', 1.23, pid=1, tid=2, attr='foo')
+        self.assertDictEqual(event.tef,
+                             {'name': 'event-name', 'pid': 1, 'tid': 2, 'ts': 1.23 * 1e6, 'args': {'attr': 'foo'}}
+                             )
+
     def test_duration_begin_events(self):
         ts = 123
         event = TraceEventDurationBegin('duration-event', ts)
-        self.assertEqual(event.ph, 'B')
-        self.assertEqual(event.ts, ts * 1e6)
+        self.assertEqual(event.tef['ph'], 'B')
+        self.assertEqual(event.tef['ts'], ts * 1e6)
 
         event.pid = 1
         event.tid = 2
@@ -19,22 +25,22 @@ class TestTraceEvents(unittest.TestCase):
     def test_duration_end_events(self):
         ts = 124
         event = TraceEventDurationEnd('duration-event', ts)
-        self.assertEqual(event.ph, 'E')
-        self.assertEqual(event.ts, ts * 1e6)
+        self.assertEqual(event.tef['ph'], 'E')
+        self.assertEqual(event.tef['ts'], ts * 1e6)
 
     def test_instant_event(self):
         ts = 123
         event = TraceEventInstant('instant-event', ts)
-        self.assertEqual(event.ph, 'i')
-        self.assertTrue(hasattr(event, 's'))
-        self.assertEqual(event.ts, ts * 1e6)
+        self.assertEqual(event.tef['ph'], 'i')
+        self.assertIn('s', event.tef)
+        self.assertEqual(event.tef['ts'], ts * 1e6)
 
     def test_counter_event(self):
         ts = 123
         event_name = 'counter-event'
         counter_value = 999
         event = TraceEventCounter(event_name, ts, counter_value)
-        self.assertEqual(event.ph, 'C')
+        self.assertEqual(event.tef['ph'], 'C')
         self.assertDictEqual(event.tef, {**event.tef, 'args': {event_name: counter_value}})
 
     def test_event_sequence(self):
