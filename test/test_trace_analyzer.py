@@ -65,10 +65,9 @@ class TestTraceEvents(unittest.TestCase):
     def test_encode_valid_event_pattern(self):
         tracer = self.setup_tracer(n_events=3)
         trace_analyzer = TraceAnalyzer(tracer)
-        self.assertEqual('A+', trace_analyzer._encode_event_pattern('event000+'))
-        self.assertEqual('A+B-', trace_analyzer._encode_event_pattern('event000+event001-'))
-        self.assertEqual(r'A+([a-zA-Z]{1}\W)*C-', trace_analyzer._encode_event_pattern('event000+*event002-'))
-        self.assertEqual(r'A+([a-zA-Z]{1}\W)*', trace_analyzer._encode_event_pattern('event000+*'))
+        self.assertEqual(r'(A)\+', trace_analyzer._encode_event_pattern('event000+'))
+        self.assertEqual(r'(A)\+(B)\-', trace_analyzer._encode_event_pattern('event000+event001-'))
+        self.assertEqual(r'(A)\+([a-zA-Z]{1}\W)*(C)\-', trace_analyzer._encode_event_pattern('event000+*event002-'))
 
     def test_encode_invalid_event_pattern(self):
         tracer = self.setup_tracer(n_events=3)
@@ -81,6 +80,20 @@ class TestTraceEvents(unittest.TestCase):
             trace_analyzer._encode_event_pattern('e0+e0-')
         with self.assertRaises(ValueError):
             trace_analyzer._encode_event_pattern('event000+event111')
+        with self.assertRaises(ValueError):
+            trace_analyzer._encode_event_pattern('event000+*')
+
+    def test_map_string_index_to_event(self):
+        tracer = self.setup_tracer(n_events=3)
+        trace_analyzer = TraceAnalyzer(tracer)
+        # events string = A+B+C+C-B-A-
+        self.assertEqual(tracer.events[0], trace_analyzer._map_string_index_to_event(0))
+        self.assertEqual(tracer.events[5], trace_analyzer._map_string_index_to_event(10))
+
+    def test_merge_events(self):
+        tracer = self.setup_tracer(n_events=3)
+        trace_analyzer = TraceAnalyzer(tracer)
+        trace_analyzer.merge_events('event000+*event001-', 'merged_event')
 
 
 if __name__ == '__main__':

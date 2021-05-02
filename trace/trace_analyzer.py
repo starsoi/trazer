@@ -110,8 +110,10 @@ class TraceAnalyzer(object):
 
         last_match = matches[-1]
         # Last match does not end at the last character of the event pattern and last character is not wildcard.
-        if last_match.end() < len(event_pattern) and event_pattern[-1] != self.event_type_wildcard:
-            raise ValueError(f'Invalid event pattern "{event_pattern[last_match.end():]}"')
+        if last_match.end() < len(event_pattern):
+            raise ValueError(
+                f'Invalid event pattern "{event_pattern[last_match.end():]}" at the end of "{event_pattern}".'
+            )
 
         encoded_event_pattern = event_pattern
         for m in matches:
@@ -122,7 +124,10 @@ class TraceAnalyzer(object):
                 raise ValueError(f'Invalid character "{event_type_code}" in the event pattern "{event_pattern}".')
 
             event_name_code = self.event_name_codes[event_name]
-            encoded_event_pattern = encoded_event_pattern.replace(event_name, event_name_code)
+            encoded_event_pattern = encoded_event_pattern.replace(event_name, '(' + event_name_code + ')')
+
+        for event_type_code in self.event_type_codes.values():
+            encoded_event_pattern = encoded_event_pattern.replace(event_type_code, '\\' + event_type_code)
 
         # Replace all wildcard with the general event pattern.
         if self.event_type_wildcard in encoded_event_pattern:
@@ -131,6 +136,16 @@ class TraceAnalyzer(object):
             )
 
         return encoded_event_pattern
+
+    def _map_string_index_to_event(self, event_string_index: int):
+        """Map the index of the ``events_string`` to the represented trace event object.
+        The length of a single event in the ``events_string`` is always ``_n_codes_per_event_name + 1``.
+        Therefore, ``event_string_index // (_n_codes_per_event_name + 1)`` is the index of the corresponding trace event
+        object in the ``tracer``
+        :param event_string_index: The index of an event name code in the ``events_string``.
+        :return: The corresponding trace event object.
+        """
+        return self.tracer.events[event_string_index // (self._n_codes_per_event_name + 1)]
 
     def merge_events(self, event_pattern: str, merged_event_name: str, pid=1000) -> None:
         """Create a new event for a specific event sequence matching the given ``event_pattern``.
@@ -169,4 +184,7 @@ class TraceAnalyzer(object):
         :param pid: pid for the merged event
         :return: None
         """
-        raise NotImplementedError()
+        encoded_event_pattern = self._encode_event_pattern(event_pattern)
+        for m in re.finditer(encoded_event_pattern, self.events_string):
+            first_event = self._map_string_index_to_event(m.start(1))
+            last_event = self._map_string_index_to_event(m.start(len(m.groups())))
