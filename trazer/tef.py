@@ -24,12 +24,10 @@ class Tracer(object):
 
 
 class TraceEvent(ABC):
-    ph = ''
-
     def __init__(self, name: str, ts: float, pid: int = 0, tid: int = 0, **kwargs):
         self.name = name
         self._ts = ts  # original input timestamp in seconds
-        self.ts = ts * 1e6  # unit in trace event format is micro-second
+        self.ts = ts * 1e6  # unit in trazer event format is micro-second
         self.pid = pid
         self.tid = tid
         self.args = kwargs

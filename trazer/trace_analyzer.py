@@ -1,7 +1,7 @@
 import math
 import re
 from typing import Dict, Type
-from trace.tef import *
+from trazer.tef import *
 
 
 CODE_BASE = 52
@@ -25,7 +25,7 @@ class TraceAnalyzer(object):
         self.events_string: str = self._create_events_string()
 
     def _validate_event_name(self, event_names) -> None:
-        """Validates all the event names and raises ValueError if any invalid event name is found in the trace.
+        """Validates all the event names and raises ValueError if any invalid event name is found in the trazer.
         Trace Analyzer has some limitation to the allowed characters in the event name, i.e. all symbols used for the
         `event_type_codes` are not allowed to appear in the event name.
         :return: None
@@ -119,7 +119,7 @@ class TraceAnalyzer(object):
         for m in matches:
             event_name, event_type_code = m.group(1), m.group(2)
             if event_name not in self.event_name_codes:
-                raise ValueError(f'Event name "{event_name}" not found in the trace.')
+                raise ValueError(f'Event name "{event_name}" not found in the trazer.')
             if event_type_code not in [*self.event_type_codes.values(), self.event_type_default_code]:
                 raise ValueError(f'Invalid character "{event_type_code}" in the event pattern "{event_pattern}".')
 
@@ -138,12 +138,12 @@ class TraceAnalyzer(object):
         return encoded_event_pattern
 
     def _map_string_index_to_event(self, event_string_index: int):
-        """Map the index of the ``events_string`` to the represented trace event object.
+        """Map the index of the ``events_string`` to the represented trazer event object.
         The length of a single event in the ``events_string`` is always ``_n_codes_per_event_name + 1``.
-        Therefore, ``event_string_index // (_n_codes_per_event_name + 1)`` is the index of the corresponding trace event
+        Therefore, ``event_string_index // (_n_codes_per_event_name + 1)`` is the index of the corresponding trazer event
         object in the ``tracer``
         :param event_string_index: The index of an event name code in the ``events_string``.
-        :return: The corresponding trace event object.
+        :return: The corresponding trazer event object.
         """
         return self.tracer.events[event_string_index // (self._n_codes_per_event_name + 1)]
 

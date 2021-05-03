@@ -1,6 +1,6 @@
 import unittest
-from trace.tef import *
-from trace.trace_analyzer import TraceAnalyzer
+from trazer.tef import *
+from trazer.trace_analyzer import TraceAnalyzer
 
 
 class TestTraceEvents(unittest.TestCase):

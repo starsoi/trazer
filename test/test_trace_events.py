@@ -1,5 +1,5 @@
 import unittest
-from trace.tef import *
+from trazer.tef import *
 
 
 class TestTraceEvents(unittest.TestCase):
