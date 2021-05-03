@@ -94,6 +94,14 @@ class TestTraceEvents(unittest.TestCase):
         tracer = self.setup_tracer(n_events=3)
         trace_analyzer = TraceAnalyzer(tracer)
         trace_analyzer.merge_events('event000+*event001-', 'merged_event')
+        merged_event_begin = tracer.events[-2]
+        merged_event_end = tracer.events[-1]
+        self.assertIsInstance(merged_event_begin, TraceEventDurationBegin)
+        self.assertIsInstance(merged_event_end, TraceEventDurationEnd)
+        self.assertEqual('merged_event', merged_event_begin.name)
+        self.assertEqual('merged_event', merged_event_end.name)
+        self.assertEqual(0, merged_event_begin.ts)
+        self.assertEqual(4000, merged_event_end.ts)
 
 
 if __name__ == '__main__':

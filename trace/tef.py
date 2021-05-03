@@ -28,6 +28,7 @@ class TraceEvent(ABC):
 
     def __init__(self, name: str, ts: float, pid: int = 0, tid: int = 0, **kwargs):
         self.name = name
+        self._ts = ts  # original input timestamp in seconds
         self.ts = ts * 1e6  # unit in trace event format is micro-second
         self.pid = pid
         self.tid = tid
@@ -39,7 +40,7 @@ class TraceEvent(ABC):
                 if not k.startswith('_') and k != 'tef'}
 
     def __str__(self):
-        return f'[{self.ts} us]: ({self.ph}) {self.name}'
+        return f'[{self.ts} us]: {self.name} ({self.ph})'
 
     def __repr__(self):
         return str(self)

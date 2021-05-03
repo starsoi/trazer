@@ -147,9 +147,10 @@ class TraceAnalyzer(object):
         """
         return self.tracer.events[event_string_index // (self._n_codes_per_event_name + 1)]
 
-    def merge_events(self, event_pattern: str, merged_event_name: str, pid=1000) -> None:
+    def merge_events(self, event_pattern: str, merged_event_name: str, pid: int = 1000) -> None:
         """Create a new event for a specific event sequence matching the given ``event_pattern``.
-        The new event is typically assigned to a different pid than the original events.
+        The new event is typically assigned to a different pid than the original events, so that they can be visualized
+        in a different group.
 
         For example, we have an event sequence for processing a network message:
         [0.001 s]: Begin receive_request_msg
@@ -188,3 +189,6 @@ class TraceAnalyzer(object):
         for m in re.finditer(encoded_event_pattern, self.events_string):
             first_event = self._map_string_index_to_event(m.start(1))
             last_event = self._map_string_index_to_event(m.start(len(m.groups())))
+
+            self.tracer.add_event(TraceEventDurationBegin(merged_event_name, first_event._ts, pid))
+            self.tracer.add_event(TraceEventDurationEnd(merged_event_name, last_event._ts, pid))
