@@ -104,17 +104,20 @@ class TraceAnalyzer(object):
         :param event_pattern: a string for matching an event sequence
         :return: the encoded event pattern
         """
+        # Get a list of matched strings of individual event specifications
         matches = list(self._re_event.finditer(event_pattern))
         if len(matches) == 0:
             raise ValueError(f'Invalid event pattern "{event_pattern}"')
 
         last_match = matches[-1]
-        # Last match does not end at the last character of the event pattern and last character is not wildcard.
+        # Last event specification does not end at the last character of the event pattern
+        # The remaining event pattern does not correspond to any event specification.
         if last_match.end() < len(event_pattern):
             raise ValueError(
                 f'Invalid event pattern "{event_pattern[last_match.end():]}" at the end of "{event_pattern}".'
             )
 
+        # Replace the event names in the event pattern with event name codes
         encoded_event_pattern = event_pattern
         for m in matches:
             event_name, event_type_code = m.group(1), m.group(2)
