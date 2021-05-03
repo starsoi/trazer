@@ -132,7 +132,7 @@ class TraceAnalyzer(object):
         # Replace all wildcard with the general event pattern.
         if self.event_type_wildcard in encoded_event_pattern:
             encoded_event_pattern = encoded_event_pattern.replace(
-                self.event_type_wildcard, f'([a-zA-Z]{{{self._n_codes_per_event_name}}}\\W)*'
+                self.event_type_wildcard, f'([a-zA-Z]{{{self._n_codes_per_event_name}}}\\W)*?'
             )
 
         return encoded_event_pattern

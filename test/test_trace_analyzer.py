@@ -67,7 +67,7 @@ class TestTraceEvents(unittest.TestCase):
         trace_analyzer = TraceAnalyzer(tracer)
         self.assertEqual(r'(A)\+', trace_analyzer._encode_event_pattern('event000+'))
         self.assertEqual(r'(A)\+(B)\-', trace_analyzer._encode_event_pattern('event000+event001-'))
-        self.assertEqual(r'(A)\+([a-zA-Z]{1}\W)*(C)\-', trace_analyzer._encode_event_pattern('event000+*event002-'))
+        self.assertEqual(r'(A)\+([a-zA-Z]{1}\W)*?(C)\-', trace_analyzer._encode_event_pattern('event000+*event002-'))
 
     def test_encode_invalid_event_pattern(self):
         tracer = self.setup_tracer(n_events=3)
@@ -90,7 +90,7 @@ class TestTraceEvents(unittest.TestCase):
         self.assertEqual(tracer.events[0], trace_analyzer._map_string_index_to_event(0))
         self.assertEqual(tracer.events[5], trace_analyzer._map_string_index_to_event(10))
 
-    def test_merge_events(self):
+    def test_merge_events_repeat0(self):
         tracer = self.setup_tracer(n_events=3)
         trace_analyzer = TraceAnalyzer(tracer)
         trace_analyzer.merge_events('event000+*event001-', 'merged_event')
@@ -102,6 +102,19 @@ class TestTraceEvents(unittest.TestCase):
         self.assertEqual('merged_event', merged_event_end.name)
         self.assertEqual(0, merged_event_begin.ts)
         self.assertEqual(4000, merged_event_end.ts)
+
+    def test_merge_events_repeat2(self):
+        tracer = self.setup_tracer(n_events=3, n_repeat=2)
+        trace_analyzer = TraceAnalyzer(tracer)
+        trace_analyzer.merge_events('event000+*event001-', 'merged_event')
+        for e in tracer.events[-6:]:
+            self.assertEqual('merged_event', e.name)
+        for i, e in enumerate(tracer.events[-6::2]):
+            self.assertIsInstance(e, TraceEventDurationBegin)
+            self.assertAlmostEqual(6000 * i, e.ts)
+        for i, e in enumerate(tracer.events[-5::2]):
+            self.assertIsInstance(e, TraceEventDurationEnd)
+            self.assertAlmostEqual(4000 + 6000 * i, e.ts)
 
 
 if __name__ == '__main__':
