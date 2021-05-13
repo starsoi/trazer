@@ -100,18 +100,11 @@ class TraceAnalyzer(object):
 
         :param encoded_subpatterns: List of encoded subpatterns. Each element in the ``encoded_subpatterns`` represents
                a list of explicitly specified events.
-        :param excluded_begin_events: List of event names to be excluded from the wildcard
+        :param exclusive_wildcard: whether explicitly specified events should be excluded from the wildcard
         :return: Regex pattern as the wildcard
         """
-        wildcard_patterns = []
         if not exclusive_wildcard:
-            for i in range(len(encoded_subpatterns) - 1):  # Number of wildcards = Number of subpatterns - 1
-                event_codes = []
-                for event_name, event_name_code in self.event_name_codes.items():
-                    event_codes.append(
-                        f'(({event_name_code}[\\{EventTypeCode.BEGIN.value}\\{EventTypeCode.END.value}])*)')
-                wildcard_patterns.append(f'(?:{"|".join(event_codes)})*')
-            return wildcard_patterns
+            return [f'(?:[a-zA-Z]{{{self._n_codes_per_event_name}}}\\W)*'] * (len(encoded_subpatterns) - 1)
 
         # Handle exclusive wildcards
         wildcard_patterns = []
@@ -147,16 +140,18 @@ class TraceAnalyzer(object):
             excluded_end_events.extend(code for code, x in events_after_wildcard.items() if x > 0)
 
             # Create the wildcard pattern considering the excluded events
-            event_codes = []
-            for event_name, event_name_code in self.event_name_codes.items():
-                event_regex = event_name_code + '['
-                if event_name_code not in excluded_begin_events:
-                    event_regex += '\\' + EventTypeCode.BEGIN.value
-                if event_name_code not in excluded_end_events:
-                    event_regex += '\\' + EventTypeCode.END.value
-                event_regex += ']'
-                event_codes.append(f'(({event_regex})*)')
-            wildcard_patterns.append(f'(?:{"|".join(event_codes)})*')
+            wildcard_regex = f'(?:[a-zA-Z]{{{self._n_codes_per_event_name}}}\\W)*?'
+            excluded_events = [event_name_code + '\\' + EventTypeCode.BEGIN.value
+                               for event_name_code in excluded_begin_events]
+            excluded_events += [event_name_code + '\\' + EventTypeCode.END.value
+                                for event_name_code in excluded_end_events]
+            # First event after the wildcard should not be included in the wildcard pattern,
+            # because it will leads to a negative lookahead match from the wildcard pattern.
+            first_event_after_wildcard = '\\'.join(encoded_subpatterns[i + 1][0])
+            excluded_events = list(filter(lambda e: e != first_event_after_wildcard, excluded_events))
+            wildcard_patterns.append(
+                wildcard_regex + (f'(?!{"|".join(excluded_events)})' if len(excluded_events) else '')
+            )
 
         return wildcard_patterns
 
