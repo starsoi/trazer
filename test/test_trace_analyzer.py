@@ -62,12 +62,23 @@ class TestTraceEvents(unittest.TestCase):
         with self.assertRaises(ValueError):
             trace_analyzer._validate_event_name(['*'])
 
-    def test_encode_valid_event_pattern(self):
-        tracer = self.setup_tracer(n_events=3)
+    def test_encode_valid_event_pattern_without_wildcard(self):
+        tracer = self.setup_tracer(n_events=4)
         trace_analyzer = TraceAnalyzer(tracer)
         self.assertEqual(r'(A)\+', trace_analyzer._encode_event_pattern('event000+'))
         self.assertEqual(r'(A)\+(B)\-', trace_analyzer._encode_event_pattern('event000+event001-'))
-        self.assertEqual(r'(A)\+([a-zA-Z]{1}\W)*?(C)\-', trace_analyzer._encode_event_pattern('event000+*event002-'))
+
+    def test_encode_valid_event_pattern_with_wildcard(self):
+        tracer = self.setup_tracer(n_events=4)
+        trace_analyzer = TraceAnalyzer(tracer)
+        self.assertEqual(r'(A)\+(?:((A[\-])*)|((B[\+\-])*)|((C[\+\-])*)|((D[\+])*))*(D)\-',
+                         trace_analyzer._encode_event_pattern('event000+*event003-'))
+        self.assertEqual(r'(A)\+(A)\-(?:((A[\+\-])*)|((B[\+\-])*)|((C[\+\-])*)|((D[\+])*))*(D)\-',
+                         trace_analyzer._encode_event_pattern('event000+event000-*event003-'))
+        self.assertEqual(r'(A)\-(?:((A[\+\-])*)|((B[\+\-])*)|((C[\+\-])*)|((D[\+])*))*(D)\-',
+                         trace_analyzer._encode_event_pattern('event000-*event003-'))
+        self.assertEqual(r'(A)\+(B)\+(?:((A[\-])*)|((B[\-])*)|((C[\+])*)|((D[\+])*))*(C)\-(D)\-',
+                         trace_analyzer._encode_event_pattern('event000+event001+*event002-event003-'))
 
     def test_encode_invalid_event_pattern(self):
         tracer = self.setup_tracer(n_events=3)

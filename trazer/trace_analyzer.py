@@ -1,6 +1,8 @@
+from collections import defaultdict, deque
+from enum import Enum
 import math
 import re
-from typing import Dict, Type
+from typing import Dict, Type, Tuple, Optional
 from trazer.tef import *
 
 
@@ -8,13 +10,18 @@ CODE_BASE = 52
 ASCII_OFFSET = 65
 
 
+class EventTypeCode(Enum):
+    BEGIN = '+'
+    END = '-'
+    WILDCARD = '*'
+
+
 class TraceAnalyzer(object):
     event_type_codes: Dict[Type, str] = {
-        TraceEventDurationBegin: '+',
-        TraceEventDurationEnd: '-',
+        TraceEventDurationBegin: EventTypeCode.BEGIN.value,
+        TraceEventDurationEnd: EventTypeCode.END.value,
     }
     event_type_default_code = '!'
-    event_type_wildcard = '*'
 
     _re_event = re.compile(r'(\w+)(\W)')
 
@@ -24,13 +31,17 @@ class TraceAnalyzer(object):
         self.event_name_codes: Dict[str, str] = self._create_event_name_codes()
         self.events_string: str = self._create_events_string()
 
-    def _validate_event_name(self, event_names) -> None:
+    def _validate_event_name(self, event_names: List[str]) -> None:
         """Validates all the event names and raises ValueError if any invalid event name is found in the trazer.
         Trace Analyzer has some limitation to the allowed characters in the event name, i.e. all symbols used for the
         `event_type_codes` are not allowed to appear in the event name.
+
+        :param event_names: A list of event names.
         :return: None
         """
-        invalid_characters = {*self.event_type_codes.values(), self.event_type_default_code, self.event_type_wildcard}
+        invalid_characters = {*self.event_type_codes.values(),
+                              self.event_type_default_code,
+                              EventTypeCode.WILDCARD.value}
         for event_name in event_names:
             if not invalid_characters.isdisjoint(event_name):
                 raise ValueError(
@@ -78,6 +89,77 @@ class TraceAnalyzer(object):
 
         return dict(zip(event_names, codes))
 
+    def _create_wildcard_patterns(self, encoded_subpatterns: List[List[Tuple[str, str]]],
+                                  exclusive_wildcard: bool = True) -> List[str]:
+        """Return the pattern to replace the wildcard in the user event pattern.
+        The pattern equivalent to the wildcard '*' is a non-capturing group in the form:
+        (?:A[\+\-]|B[\+\-]|C[\+\-])
+        where the event name codes include all possible codes.
+        Depending on the event pattern, not all event types are included by the wildcard.
+        The detailed exclusion rules are described in :func:_encode_event_pattern.
+
+        :param encoded_subpatterns: List of encoded subpatterns. Each element in the ``encoded_subpatterns`` represents
+               a list of explicitly specified events.
+        :param excluded_begin_events: List of event names to be excluded from the wildcard
+        :return: Regex pattern as the wildcard
+        """
+        wildcard_patterns = []
+        if not exclusive_wildcard:
+            for i in range(len(encoded_subpatterns) - 1):  # Number of wildcards = Number of subpatterns - 1
+                event_codes = []
+                for event_name, event_name_code in self.event_name_codes.items():
+                    event_codes.append(
+                        f'(({event_name_code}[\\{EventTypeCode.BEGIN.value}\\{EventTypeCode.END.value}])*)')
+                wildcard_patterns.append(f'(?:{"|".join(event_codes)})*')
+            return wildcard_patterns
+
+        # Handle exclusive wildcards
+        wildcard_patterns = []
+        for i, encoded_subpattern in enumerate(encoded_subpatterns):
+            if i == len(encoded_subpatterns) - 1:
+                break
+
+            excluded_end_events = []
+            excluded_begin_events = []
+            events_before_wildcard = defaultdict(int)
+            events_after_wildcard = defaultdict(int)
+
+            # Collect begin events specified before the wildcard.
+            # These events do not end before the wildcard.
+            for event_name_code, event_type_code in encoded_subpattern:
+                if event_type_code == EventTypeCode.BEGIN.value:
+                    events_before_wildcard[event_name_code] += 1
+                elif event_type_code == EventTypeCode.END.value:
+                    if events_before_wildcard[event_name_code] > 0:
+                        events_before_wildcard[event_name_code] -= 1
+            excluded_begin_events.extend(code for code, x in events_before_wildcard.items() if x > 0)
+
+            # Collect end events specified after the wildcard.
+            # These events do not begin after the wildcard.
+            for event_name_code, event_type_code in encoded_subpatterns[i + 1]:
+                if event_type_code == EventTypeCode.BEGIN.value:
+                    events_after_wildcard[event_name_code] += 1
+                elif event_type_code == EventTypeCode.END.value:
+                    if events_after_wildcard[event_name_code] == 0:
+                        events_after_wildcard[event_name_code] += 1
+                    else:
+                        events_after_wildcard[event_name_code] -= 1
+            excluded_end_events.extend(code for code, x in events_after_wildcard.items() if x > 0)
+
+            # Create the wildcard pattern considering the excluded events
+            event_codes = []
+            for event_name, event_name_code in self.event_name_codes.items():
+                event_regex = event_name_code + '['
+                if event_name_code not in excluded_begin_events:
+                    event_regex += '\\' + EventTypeCode.BEGIN.value
+                if event_name_code not in excluded_end_events:
+                    event_regex += '\\' + EventTypeCode.END.value
+                event_regex += ']'
+                event_codes.append(f'(({event_regex})*)')
+            wildcard_patterns.append(f'(?:{"|".join(event_codes)})*')
+
+        return wildcard_patterns
+
     def _create_events_string(self) -> str:
         """Represent the event sequence using a string, using the following rules.
           * The event names are represented using the alphabetic codes.
@@ -99,52 +181,86 @@ class TraceAnalyzer(object):
             events_string += event_name_code + event_type_code
         return events_string
 
-    def _encode_event_pattern(self, event_pattern: str) -> str:
+    def _encode_event_pattern(self, event_pattern: str, exclusive_wildcard: bool = True) -> str:
         """Replace the event name in the ``event_pattern`` with their respective alphabetic code.
+        By default (``exclusive_wildcard`` = True), the wildcard excludes those events explicitly specified
+        in ``event_pattern``.
+
+        Wildcard exclusion rules are as follows.
+        Consider the event pattern ``<events-before-wildcard>*<events-after-wildcard>``.
+
+        * If an event in the ``<events-before-wildcard>`` begins but not yet ends, e.g. A+ and B+ in the pattern
+        A+B+*, the wildcard will exclude the same begin events, i.e. A+ and B+. In other words, for event A and B,
+        only A- and B- will be covered by the wildcard.
+
+        * If an event in the ``<events-after-wildcard>`` ends, e.g. C- in the pattern A+B+*C-, the wildcard will
+        exclude the same end events, i.e. C-. In other words, for event C, only C+ will be covered by the wildcard.
+
         :param event_pattern: a string for matching an event sequence
+        :param exclusive_wildcard: whether explicitly specified events should be excluded from the wildcard
         :return: the encoded event pattern
         """
-        # Get a list of matched strings of individual event specifications
-        matches = list(self._re_event.finditer(event_pattern))
-        if len(matches) == 0:
+        # Split the event pattern by wildcard symbol
+        # E.g. 'event1+event2+*event3-*event4-' is splitted into a list of subpatterns
+        # ['event1+event2+', 'event3-', 'event4-']
+        subpatterns: List[str] = event_pattern.split(EventTypeCode.WILDCARD.value)
+
+        # Get a list of match objects for each subpattern
+        # E.g.
+        # [
+        #   [<Match object for 'event1+'>, <Match object for 'event2+'>],
+        #   [<Match object for 'event3-'>],
+        #   [<Match object for 'event4-']
+        # ]
+        matches: List[List[re.Match]] = [list(self._re_event.finditer(subpattern)) for subpattern in subpatterns]
+        if any(len(m) == 0 for m in matches):  # No match is found in one of the subpattern
             raise ValueError(f'Invalid event pattern "{event_pattern}"')
 
-        last_match = matches[-1]
+        last_match = matches[-1][-1]
         # Last event specification does not end at the last character of the event pattern
         # The remaining event pattern does not correspond to any event specification.
-        if last_match.end() < len(event_pattern):
+        if last_match.end() < len(subpatterns[-1]):
             raise ValueError(
                 f'Invalid event pattern "{event_pattern[last_match.end():]}" at the end of "{event_pattern}".'
             )
 
-        # Replace the event names in the event pattern with event name codes
-        encoded_event_pattern = event_pattern
-        for m in matches:
-            event_name, event_type_code = m.group(1), m.group(2)
-            if event_name not in self.event_name_codes:
-                raise ValueError(f'Event name "{event_name}" not found in the trazer.')
-            if event_type_code not in [*self.event_type_codes.values(), self.event_type_default_code]:
-                raise ValueError(f'Invalid character "{event_type_code}" in the event pattern "{event_pattern}".')
+        # Encode the subpatterns using event name codes. Each match object is converted into a tuple of
+        # (event name code, event type code)
+        # E.g.
+        # [
+        #   [('A', '+'), ('B', '+')],
+        #   [('C', '-')],
+        #   [('D', '-')]
+        # ]
+        encoded_subpatterns: List[List[Tuple[str, str]]] = []
+        for i, m_one_subpattern in enumerate(matches):
+            encoded_subpatterns.append([])
+            for m in m_one_subpattern:
+                event_name, event_type_code = m.group(1), m.group(2)
+                if event_name not in self.event_name_codes:
+                    raise ValueError(f'Event name "{event_name}" not found in the trazer.')
+                if event_type_code not in [*self.event_type_codes.values(), self.event_type_default_code]:
+                    raise ValueError(f'Invalid character "{event_type_code}" in the event pattern "{event_pattern}".')
 
-            event_name_code = self.event_name_codes[event_name]
-            encoded_event_pattern = encoded_event_pattern.replace(event_name, '(' + event_name_code + ')')
+                event_name_code = self.event_name_codes[event_name]
+                encoded_subpatterns[i].append((event_name_code, event_type_code))
 
-        for event_type_code in self.event_type_codes.values():
-            encoded_event_pattern = encoded_event_pattern.replace(event_type_code, '\\' + event_type_code)
+        wildcard_patterns = self._create_wildcard_patterns(encoded_subpatterns, exclusive_wildcard)
 
-        # Replace all wildcard with the general event pattern.
-        if self.event_type_wildcard in encoded_event_pattern:
-            encoded_event_pattern = encoded_event_pattern.replace(
-                self.event_type_wildcard, f'([a-zA-Z]{{{self._n_codes_per_event_name}}}\\W)*?'
-            )
+        encoded_event_pattern = ''
+        for i, encoded_subpattern in enumerate(encoded_subpatterns):
+            encoded_event_pattern += ''.join(f'({event_name_code})\\{event_type_code}'
+                                             for event_name_code, event_type_code in encoded_subpattern)
+            if i < len(encoded_subpatterns) - 1:
+                encoded_event_pattern += wildcard_patterns[i]
 
         return encoded_event_pattern
 
     def _map_string_index_to_event(self, event_string_index: int):
         """Map the index of the ``events_string`` to the represented trazer event object.
         The length of a single event in the ``events_string`` is always ``_n_codes_per_event_name + 1``.
-        Therefore, ``event_string_index // (_n_codes_per_event_name + 1)`` is the index of the corresponding trazer event
-        object in the ``tracer``
+        Therefore, ``event_string_index // (_n_codes_per_event_name + 1)`` is the index of the corresponding
+        trazer event object in the ``tracer``.
         :param event_string_index: The index of an event name code in the ``events_string``.
         :return: The corresponding trazer event object.
         """
