@@ -39,9 +39,11 @@ class TraceAnalyzer(object):
         :param event_names: A list of event names.
         :return: None
         """
-        invalid_characters = {*self.event_type_codes.values(),
-                              self.event_type_default_code,
-                              EventTypeCode.WILDCARD.value}
+        invalid_characters = {
+            *self.event_type_codes.values(),
+            self.event_type_default_code,
+            EventTypeCode.WILDCARD.value,
+        }
         for event_name in event_names:
             if not invalid_characters.isdisjoint(event_name):
                 raise ValueError(
@@ -72,7 +74,9 @@ class TraceAnalyzer(object):
             return {}
         self._validate_event_name(event_names)
 
-        self._n_codes_per_event_name = math.ceil(math.log(n_event_names, CODE_BASE)) if n_event_names > 1 else 1
+        self._n_codes_per_event_name = (
+            math.ceil(math.log(n_event_names, CODE_BASE)) if n_event_names > 1 else 1
+        )
         codes = [''] * n_event_names
 
         # Calculate the code (alphabetic letter) for each event name
@@ -89,8 +93,11 @@ class TraceAnalyzer(object):
 
         return dict(zip(event_names, codes))
 
-    def _create_wildcard_patterns(self, encoded_subpatterns: List[List[Tuple[str, str]]],
-                                  exclusive_wildcard: bool = True) -> List[str]:
+    def _create_wildcard_patterns(
+        self,
+        encoded_subpatterns: List[List[Tuple[str, str]]],
+        exclusive_wildcard: bool = True,
+    ) -> List[str]:
         """Return the pattern to replace the wildcard in the user event pattern.
         The pattern equivalent to the wildcard '*' is a non-capturing group in the form:
         (?:A[\+\-]|B[\+\-]|C[\+\-])
@@ -126,7 +133,9 @@ class TraceAnalyzer(object):
                 elif event_type_code == EventTypeCode.END.value:
                     if events_before_wildcard[event_name_code] > 0:
                         events_before_wildcard[event_name_code] -= 1
-            excluded_begin_events.extend(code for code, x in events_before_wildcard.items() if x > 0)
+            excluded_begin_events.extend(
+                code for code, x in events_before_wildcard.items() if x > 0
+            )
 
             # Collect end events specified after the wildcard.
             # These events do not begin after the wildcard.
@@ -138,20 +147,26 @@ class TraceAnalyzer(object):
                         events_after_wildcard[event_name_code] += 1
                     else:
                         events_after_wildcard[event_name_code] -= 1
-            excluded_end_events.extend(code for code, x in events_after_wildcard.items() if x > 0)
+            excluded_end_events.extend(
+                code for code, x in events_after_wildcard.items() if x > 0
+            )
 
             # Create the wildcard pattern considering the excluded events
-            excluded_events = [event_name_code + '\\' + EventTypeCode.BEGIN.value
-                               for event_name_code in excluded_begin_events]
-            excluded_events += [event_name_code + '\\' + EventTypeCode.END.value
-                                for event_name_code in excluded_end_events]
+            excluded_events = [
+                event_name_code + '\\' + EventTypeCode.BEGIN.value
+                for event_name_code in excluded_begin_events
+            ]
+            excluded_events += [
+                event_name_code + '\\' + EventTypeCode.END.value
+                for event_name_code in excluded_end_events
+            ]
 
             # Use Tempered Greedy Token for excluding
             wildcard_patterns.append(
-                '(?:' +
-                (f'(?!{"|".join(excluded_events)})' if len(excluded_events) else '') +
-                wildcard_regex +
-                ')*?'
+                '(?:'
+                + (f'(?!{"|".join(excluded_events)})' if len(excluded_events) else '')
+                + wildcard_regex
+                + ')*?'
             )
 
         return wildcard_patterns
@@ -173,11 +188,15 @@ class TraceAnalyzer(object):
         events_string = ''
         for event in self.tracer.events:
             event_name_code = self.event_name_codes[event.name]
-            event_type_code = self.event_type_codes.get(event.__class__, self.event_type_default_code)
+            event_type_code = self.event_type_codes.get(
+                event.__class__, self.event_type_default_code
+            )
             events_string += event_name_code + event_type_code
         return events_string
 
-    def _encode_event_pattern(self, event_pattern: str, exclusive_wildcard: bool = True) -> str:
+    def _encode_event_pattern(
+        self, event_pattern: str, exclusive_wildcard: bool = True
+    ) -> str:
         """Replace the event name in the ``event_pattern`` with their respective alphabetic code.
         By default (``exclusive_wildcard`` = True), the wildcard excludes those events explicitly specified
         in ``event_pattern``.
@@ -208,8 +227,12 @@ class TraceAnalyzer(object):
         #   [<Match object for 'event3-'>],
         #   [<Match object for 'event4-']
         # ]
-        matches: List[List[re.Match]] = [list(self._re_event.finditer(subpattern)) for subpattern in subpatterns]
-        if any(len(m) == 0 for m in matches):  # No match is found in one of the subpattern
+        matches: List[List[re.Match]] = [
+            list(self._re_event.finditer(subpattern)) for subpattern in subpatterns
+        ]
+        if any(
+            len(m) == 0 for m in matches
+        ):  # No match is found in one of the subpattern
             raise ValueError(f'Invalid event pattern "{event_pattern}"')
 
         last_match = matches[-1][-1]
@@ -234,19 +257,30 @@ class TraceAnalyzer(object):
             for m in m_one_subpattern:
                 event_name, event_type_code = m.group(1), m.group(2)
                 if event_name not in self.event_name_codes:
-                    raise ValueError(f'Event name "{event_name}" not found in the trazer.')
-                if event_type_code not in [*self.event_type_codes.values(), self.event_type_default_code]:
-                    raise ValueError(f'Invalid character "{event_type_code}" in the event pattern "{event_pattern}".')
+                    raise ValueError(
+                        f'Event name "{event_name}" not found in the trazer.'
+                    )
+                if event_type_code not in [
+                    *self.event_type_codes.values(),
+                    self.event_type_default_code,
+                ]:
+                    raise ValueError(
+                        f'Invalid character "{event_type_code}" in the event pattern "{event_pattern}".'
+                    )
 
                 event_name_code = self.event_name_codes[event_name]
                 encoded_subpatterns[i].append((event_name_code, event_type_code))
 
-        wildcard_patterns = self._create_wildcard_patterns(encoded_subpatterns, exclusive_wildcard)
+        wildcard_patterns = self._create_wildcard_patterns(
+            encoded_subpatterns, exclusive_wildcard
+        )
 
         encoded_event_pattern = ''
         for i, encoded_subpattern in enumerate(encoded_subpatterns):
-            encoded_event_pattern += ''.join(f'({event_name_code})\\{event_type_code}'
-                                             for event_name_code, event_type_code in encoded_subpattern)
+            encoded_event_pattern += ''.join(
+                f'({event_name_code})\\{event_type_code}'
+                for event_name_code, event_type_code in encoded_subpattern
+            )
             if i < len(encoded_subpatterns) - 1:
                 encoded_event_pattern += wildcard_patterns[i]
 
@@ -260,9 +294,13 @@ class TraceAnalyzer(object):
         :param event_string_index: The index of an event name code in the ``events_string``.
         :return: The corresponding trazer event object.
         """
-        return self.tracer.events[event_string_index // (self._n_codes_per_event_name + 1)]
+        return self.tracer.events[
+            event_string_index // (self._n_codes_per_event_name + 1)
+        ]
 
-    def merge_events(self, event_pattern: str, merged_event_name: str, pid: int = 1000) -> None:
+    def merge_events(
+        self, event_pattern: str, merged_event_name: str, pid: int = 1000
+    ) -> None:
         """Create a new event for a specific event sequence matching the given ``event_pattern``.
         The new event is typically assigned to a different pid than the original events, so that they can be visualized
         in a different group.
@@ -305,5 +343,9 @@ class TraceAnalyzer(object):
             first_event = self._map_string_index_to_event(m.start(1))
             last_event = self._map_string_index_to_event(m.start(len(m.groups())))
 
-            self.tracer.add_event(TraceEventDurationBegin(merged_event_name, first_event._ts, pid))
-            self.tracer.add_event(TraceEventDurationEnd(merged_event_name, last_event._ts, pid))
+            self.tracer.add_event(
+                TraceEventDurationBegin(merged_event_name, first_event._ts, pid)
+            )
+            self.tracer.add_event(
+                TraceEventDurationEnd(merged_event_name, last_event._ts, pid)
+            )

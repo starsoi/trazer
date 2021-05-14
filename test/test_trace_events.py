@@ -4,8 +4,13 @@ from trazer.tef import *
 
 def test_trace_event_base_tef():
     event = TraceEvent('event-name', 1.23, pid=1, tid=2, attr='foo')
-    assert (event.tef ==
-            {'name': 'event-name', 'pid': 1, 'tid': 2, 'ts': 1.23 * 1e6, 'args': {'attr': 'foo'}})
+    assert event.tef == {
+        'name': 'event-name',
+        'pid': 1,
+        'tid': 2,
+        'ts': 1.23 * 1e6,
+        'args': {'attr': 'foo'},
+    }
 
 
 def test_duration_begin_events():
@@ -17,8 +22,14 @@ def test_duration_begin_events():
     event.pid = 1
     event.tid = 2
 
-    assert (event.tef ==
-            {'name': 'duration-event', 'ph': 'B', 'pid': 1, 'tid': 2, 'ts': ts * 1e6, 'args': {}})
+    assert event.tef == {
+        'name': 'duration-event',
+        'ph': 'B',
+        'pid': 1,
+        'tid': 2,
+        'ts': ts * 1e6,
+        'args': {},
+    }
 
 
 def test_duration_end_events():
@@ -67,6 +78,7 @@ def test_custom_attributes():
 
 def test_json_export():
     import json
+
     tracer = Tracer()
     event1_begin = TraceEventDurationBegin('event1', 0.001)
     event1_end = TraceEventDurationEnd('event1', 0.002)

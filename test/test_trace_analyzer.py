@@ -27,13 +27,18 @@ def test_event_name_codes_1():
 
 def test_event_name_codes_10():
     trace_analyzer = setup_trace_analyzer(n_events=10)
-    assert (
-        trace_analyzer.event_name_codes ==
-        {
-            'event000': 'A', 'event001': 'B', 'event002': 'C', 'event003': 'D', 'event004': 'E',
-            'event005': 'F', 'event006': 'G', 'event007': 'H', 'event008': 'I', 'event009': 'J',
-        }
-    )
+    assert trace_analyzer.event_name_codes == {
+        'event000': 'A',
+        'event001': 'B',
+        'event002': 'C',
+        'event003': 'D',
+        'event004': 'E',
+        'event005': 'F',
+        'event006': 'G',
+        'event007': 'H',
+        'event008': 'I',
+        'event009': 'J',
+    }
 
 
 def test_event_name_codes_104():
@@ -75,14 +80,22 @@ def test_encode_valid_event_pattern_without_wildcard():
 
 def test_encode_valid_event_pattern_with_wildcard():
     trace_analyzer = setup_trace_analyzer(n_events=4)
-    assert (trace_analyzer._encode_event_pattern('event000+*event003-') ==
-            r'(A)\+(?:(?!A\+|D\-)[a-zA-Z]{1}\W)*?(D)\-')
-    assert (trace_analyzer._encode_event_pattern('event000+event000-*event003-') ==
-            r'(A)\+(A)\-(?:(?!D\-)[a-zA-Z]{1}\W)*?(D)\-')
-    assert (trace_analyzer._encode_event_pattern('event000-*event003-') ==
-            r'(A)\-(?:(?!D\-)[a-zA-Z]{1}\W)*?(D)\-')
-    assert (trace_analyzer._encode_event_pattern('event000+event001+*event002-event003-') ==
-            r'(A)\+(B)\+(?:(?!A\+|B\+|C\-|D\-)[a-zA-Z]{1}\W)*?(C)\-(D)\-')
+    assert (
+        trace_analyzer._encode_event_pattern('event000+*event003-')
+        == r'(A)\+(?:(?!A\+|D\-)[a-zA-Z]{1}\W)*?(D)\-'
+    )
+    assert (
+        trace_analyzer._encode_event_pattern('event000+event000-*event003-')
+        == r'(A)\+(A)\-(?:(?!D\-)[a-zA-Z]{1}\W)*?(D)\-'
+    )
+    assert (
+        trace_analyzer._encode_event_pattern('event000-*event003-')
+        == r'(A)\-(?:(?!D\-)[a-zA-Z]{1}\W)*?(D)\-'
+    )
+    assert (
+        trace_analyzer._encode_event_pattern('event000+event001+*event002-event003-')
+        == r'(A)\+(B)\+(?:(?!A\+|B\+|C\-|D\-)[a-zA-Z]{1}\W)*?(C)\-(D)\-'
+    )
 
 
 def test_encode_invalid_event_pattern():
@@ -102,8 +115,12 @@ def test_encode_invalid_event_pattern():
 def test_map_string_index_to_event():
     trace_analyzer = setup_trace_analyzer(n_events=3)
     # events string = A+B+C+C-B-A-
-    assert trace_analyzer._map_string_index_to_event(0) == trace_analyzer.tracer.events[0]
-    assert trace_analyzer._map_string_index_to_event(10) == trace_analyzer.tracer.events[5]
+    assert (
+        trace_analyzer._map_string_index_to_event(0) == trace_analyzer.tracer.events[0]
+    )
+    assert (
+        trace_analyzer._map_string_index_to_event(10) == trace_analyzer.tracer.events[5]
+    )
 
 
 def test_merge_events_repeat0():

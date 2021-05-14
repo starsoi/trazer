@@ -13,10 +13,7 @@ class Tracer(object):
 
     @property
     def tef(self):
-        return {
-            'traceEvents': [e.tef for e in self.events],
-            'displayTimeUnit': 'ms'
-        }
+        return {'traceEvents': [e.tef for e in self.events], 'displayTimeUnit': 'ms'}
 
     @property
     def json(self):
@@ -34,8 +31,11 @@ class TraceEvent(ABC):
 
     @property
     def tef(self):
-        return {k: v for k, v in {**self.__dict__, **self.__class__.__dict__}.items()
-                if not k.startswith('_') and k != 'tef'}
+        return {
+            k: v
+            for k, v in {**self.__dict__, **self.__class__.__dict__}.items()
+            if not k.startswith('_') and k != 'tef'
+        }
 
     def __str__(self):
         return f'[{self.ts} us]: {self.name} ({self.ph})'
