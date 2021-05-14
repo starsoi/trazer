@@ -145,10 +145,8 @@ class TraceAnalyzer(object):
                                for event_name_code in excluded_begin_events]
             excluded_events += [event_name_code + '\\' + EventTypeCode.END.value
                                 for event_name_code in excluded_end_events]
-            # First event after the wildcard should not be included in the wildcard pattern,
-            # because it will leads to a negative lookahead match from the wildcard pattern.
-            # first_event_after_wildcard = '\\'.join(encoded_subpatterns[i + 1][0])
-            # excluded_events = list(filter(lambda e: e != first_event_after_wildcard, excluded_events))
+
+            # Use Tempered Greedy Token for excluding
             wildcard_patterns.append(
                 '(?:' +
                 (f'(?!{"|".join(excluded_events)})' if len(excluded_events) else '') +
