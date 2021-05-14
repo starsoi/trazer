@@ -103,8 +103,9 @@ class TraceAnalyzer(object):
         :param exclusive_wildcard: whether explicitly specified events should be excluded from the wildcard
         :return: Regex pattern as the wildcard
         """
+        wildcard_regex = f'[a-zA-Z]{{{self._n_codes_per_event_name}}}\\W'
         if not exclusive_wildcard:
-            return [f'(?:[a-zA-Z]{{{self._n_codes_per_event_name}}}\\W)*'] * (len(encoded_subpatterns) - 1)
+            return [f'(?:{wildcard_regex})*?'] * (len(encoded_subpatterns) - 1)
 
         # Handle exclusive wildcards
         wildcard_patterns = []
@@ -140,17 +141,19 @@ class TraceAnalyzer(object):
             excluded_end_events.extend(code for code, x in events_after_wildcard.items() if x > 0)
 
             # Create the wildcard pattern considering the excluded events
-            wildcard_regex = f'(?:[a-zA-Z]{{{self._n_codes_per_event_name}}}\\W)*?'
             excluded_events = [event_name_code + '\\' + EventTypeCode.BEGIN.value
                                for event_name_code in excluded_begin_events]
             excluded_events += [event_name_code + '\\' + EventTypeCode.END.value
                                 for event_name_code in excluded_end_events]
             # First event after the wildcard should not be included in the wildcard pattern,
             # because it will leads to a negative lookahead match from the wildcard pattern.
-            first_event_after_wildcard = '\\'.join(encoded_subpatterns[i + 1][0])
-            excluded_events = list(filter(lambda e: e != first_event_after_wildcard, excluded_events))
+            # first_event_after_wildcard = '\\'.join(encoded_subpatterns[i + 1][0])
+            # excluded_events = list(filter(lambda e: e != first_event_after_wildcard, excluded_events))
             wildcard_patterns.append(
-                wildcard_regex + (f'(?!{"|".join(excluded_events)})' if len(excluded_events) else '')
+                '(?:' +
+                (f'(?!{"|".join(excluded_events)})' if len(excluded_events) else '') +
+                wildcard_regex +
+                ')*?'
             )
 
         return wildcard_patterns

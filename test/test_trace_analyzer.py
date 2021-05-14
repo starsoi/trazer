@@ -71,13 +71,13 @@ class TestTraceEvents(unittest.TestCase):
     def test_encode_valid_event_pattern_with_wildcard(self):
         tracer = self.setup_tracer(n_events=4)
         trace_analyzer = TraceAnalyzer(tracer)
-        self.assertEqual(r'(A)\+(?:[a-zA-Z]{1}\W)*?(?!A\+)(D)\-',
+        self.assertEqual(r'(A)\+(?:(?!A\+|D\-)[a-zA-Z]{1}\W)*?(D)\-',
                          trace_analyzer._encode_event_pattern('event000+*event003-'))
-        self.assertEqual(r'(A)\+(A)\-(?:[a-zA-Z]{1}\W)*?(D)\-',
+        self.assertEqual(r'(A)\+(A)\-(?:(?!D\-)[a-zA-Z]{1}\W)*?(D)\-',
                          trace_analyzer._encode_event_pattern('event000+event000-*event003-'))
-        self.assertEqual(r'(A)\-(?:[a-zA-Z]{1}\W)*?(D)\-',
+        self.assertEqual(r'(A)\-(?:(?!D\-)[a-zA-Z]{1}\W)*?(D)\-',
                          trace_analyzer._encode_event_pattern('event000-*event003-'))
-        self.assertEqual(r'(A)\+(B)\+(?:[a-zA-Z]{1}\W)*?(?!A\+|B\+|D\-)(C)\-(D)\-',
+        self.assertEqual(r'(A)\+(B)\+(?:(?!A\+|B\+|C\-|D\-)[a-zA-Z]{1}\W)*?(C)\-(D)\-',
                          trace_analyzer._encode_event_pattern('event000+event001+*event002-event003-'))
 
     def test_encode_invalid_event_pattern(self):
@@ -127,6 +127,19 @@ class TestTraceEvents(unittest.TestCase):
         for i, e in enumerate(tracer.events[-5::2]):
             self.assertIsInstance(e, TraceEventDurationEnd)
             self.assertAlmostEqual(4000 + 6000 * i, e.ts)
+
+    def test_merge_events_repeat2_but_match_only_repetition(self):
+        tracer = self.setup_tracer(n_events=3, n_repeat=2)
+        tracer.add_event(TraceEventDurationBegin('final_event', 0.1))
+        trace_analyzer = TraceAnalyzer(tracer)
+        trace_analyzer.merge_events('event000+*event000-final_event+', 'merged_event')
+        self.assertNotEqual('merged_event', tracer.events[-3].name)
+        self.assertIsInstance(tracer.events[-2], TraceEventDurationBegin)
+        self.assertEqual('merged_event', tracer.events[-2].name)
+        self.assertAlmostEqual(12000, tracer.events[-2].ts)
+        self.assertIsInstance(tracer.events[-1], TraceEventDurationEnd)
+        self.assertEqual('merged_event', tracer.events[-1].name)
+        self.assertAlmostEqual(100000, tracer.events[-1].ts)
 
 
 if __name__ == '__main__':
