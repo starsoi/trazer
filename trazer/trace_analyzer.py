@@ -1,9 +1,9 @@
-from collections import defaultdict, deque
+from collections import defaultdict
 from enum import Enum
 import math
 import re
-from typing import Dict, Type, Tuple, Optional
-from trazer.tef import *
+from typing import Dict, List, Type, Tuple
+from trazer.tef import Tracer, TraceEventDurationBegin, TraceEventDurationEnd
 
 
 CODE_BASE = 52
@@ -98,7 +98,7 @@ class TraceAnalyzer(object):
         encoded_subpatterns: List[List[Tuple[str, str]]],
         exclusive_wildcard: bool = True,
     ) -> List[str]:
-        """Return the pattern to replace the wildcard in the user event pattern.
+        r"""Return the pattern to replace the wildcard in the user event pattern.
         The pattern equivalent to the wildcard '*' is a non-capturing group in the form:
         (?:A[\+\-]|B[\+\-]|C[\+\-])
         where the event name codes include all possible codes.

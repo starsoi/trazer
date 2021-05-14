@@ -1,5 +1,10 @@
 import pytest
-from trazer.tef import *
+from trazer.tef import (
+    Tracer,
+    TraceEventDurationBegin,
+    TraceEventDurationEnd,
+    TraceEventInstant,
+)
 from trazer.trace_analyzer import TraceAnalyzer
 
 
