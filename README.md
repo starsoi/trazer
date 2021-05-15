@@ -1,6 +1,6 @@
 # Trazer
 
-A general trace analysis framework for program and network traces
+A general trace analysis framework for program and network traces.
 
 ## Getting Started
 
@@ -14,12 +14,12 @@ A general trace analysis framework for program and network traces
 ## Development
 
 1. Install development dependencies
-```python
+```bash
 pip3 install requirements-dev.txt
 ```
 
 2. Install runtime dependencies
-```python
+```bash
 pip3 install requirements.txt
 ```
 
