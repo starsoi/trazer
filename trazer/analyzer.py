@@ -10,18 +10,18 @@ CODE_BASE = 52
 ASCII_OFFSET = 65
 
 
-class EventTypeCode(Enum):
+class _EventTypeCode(Enum):
     BEGIN = '+'
     END = '-'
     WILDCARD = '*'
 
 
 class TraceAnalyzer(object):
-    event_type_codes: Dict[Type, str] = {
-        TraceEventDurationBegin: EventTypeCode.BEGIN.value,
-        TraceEventDurationEnd: EventTypeCode.END.value,
+    _event_type_codes: Dict[Type, str] = {
+        TraceEventDurationBegin: _EventTypeCode.BEGIN.value,
+        TraceEventDurationEnd: _EventTypeCode.END.value,
     }
-    event_type_default_code = '!'
+    _event_type_default_code = '!'
 
     _re_event = re.compile(r'(\w+)(\W)')
 
@@ -40,9 +40,9 @@ class TraceAnalyzer(object):
         :return: None
         """
         invalid_characters = {
-            *self.event_type_codes.values(),
-            self.event_type_default_code,
-            EventTypeCode.WILDCARD.value,
+            *self._event_type_codes.values(),
+            self._event_type_default_code,
+            _EventTypeCode.WILDCARD.value,
         }
         for event_name in event_names:
             if not invalid_characters.isdisjoint(event_name):
@@ -128,9 +128,9 @@ class TraceAnalyzer(object):
             # Collect begin events specified before the wildcard.
             # These events do not end before the wildcard.
             for event_name_code, event_type_code in encoded_subpattern:
-                if event_type_code == EventTypeCode.BEGIN.value:
+                if event_type_code == _EventTypeCode.BEGIN.value:
                     events_before_wildcard[event_name_code] += 1
-                elif event_type_code == EventTypeCode.END.value:
+                elif event_type_code == _EventTypeCode.END.value:
                     if events_before_wildcard[event_name_code] > 0:
                         events_before_wildcard[event_name_code] -= 1
             excluded_begin_events.extend(
@@ -140,9 +140,9 @@ class TraceAnalyzer(object):
             # Collect end events specified after the wildcard.
             # These events do not begin after the wildcard.
             for event_name_code, event_type_code in encoded_subpatterns[i + 1]:
-                if event_type_code == EventTypeCode.BEGIN.value:
+                if event_type_code == _EventTypeCode.BEGIN.value:
                     events_after_wildcard[event_name_code] += 1
-                elif event_type_code == EventTypeCode.END.value:
+                elif event_type_code == _EventTypeCode.END.value:
                     if events_after_wildcard[event_name_code] == 0:
                         events_after_wildcard[event_name_code] += 1
                     else:
@@ -153,11 +153,11 @@ class TraceAnalyzer(object):
 
             # Create the wildcard pattern considering the excluded events
             excluded_events = [
-                event_name_code + '\\' + EventTypeCode.BEGIN.value
+                event_name_code + '\\' + _EventTypeCode.BEGIN.value
                 for event_name_code in excluded_begin_events
             ]
             excluded_events += [
-                event_name_code + '\\' + EventTypeCode.END.value
+                event_name_code + '\\' + _EventTypeCode.END.value
                 for event_name_code in excluded_end_events
             ]
 
@@ -188,8 +188,8 @@ class TraceAnalyzer(object):
         events_string = ''
         for event in self.trace.events:
             event_name_code = self.event_name_codes[event.name]
-            event_type_code = self.event_type_codes.get(
-                event.__class__, self.event_type_default_code
+            event_type_code = self._event_type_codes.get(
+                event.__class__, self._event_type_default_code
             )
             events_string += event_name_code + event_type_code
         return events_string
@@ -218,7 +218,7 @@ class TraceAnalyzer(object):
         # Split the event pattern by wildcard symbol
         # E.g. 'event1+event2+*event3-*event4-' is splitted into a list of subpatterns
         # ['event1+event2+', 'event3-', 'event4-']
-        subpatterns: List[str] = event_pattern.split(EventTypeCode.WILDCARD.value)
+        subpatterns: List[str] = event_pattern.split(_EventTypeCode.WILDCARD.value)
 
         # Get a list of match objects for each subpattern
         # E.g.
@@ -261,8 +261,8 @@ class TraceAnalyzer(object):
                         f'Event name "{event_name}" not found in the trazer.'
                     )
                 if event_type_code not in [
-                    *self.event_type_codes.values(),
-                    self.event_type_default_code,
+                    *self._event_type_codes.values(),
+                    self._event_type_default_code,
                 ]:
                     raise ValueError(
                         f'Invalid character "{event_type_code}" in the event pattern "{event_pattern}".'
@@ -306,34 +306,40 @@ class TraceAnalyzer(object):
         in a different group.
 
         For example, we have an event sequence for processing a network message:
-        [0.001 s]: Begin receive_request_msg
-        [0.002 s]: Begin process_request_msg
-        [0.003 s]: End   process_request_msg
-        [0.004 s]: Begin prepare_response_msg
-        [0.005 s]: End   prepare_response_msg
-        [0.006 s]: Begin send_response_msg
-        [0.007 s]: End   send_response_msg
-        [0.008 s]: End   receive_request_msg
-        The events are stored in the `network_trace` object.
+
+        * [0.001 s]: Begin receive_request_msg
+        * [0.002 s]: Begin process_request_msg
+        * [0.003 s]: End   process_request_msg
+        * [0.004 s]: Begin prepare_response_msg
+        * [0.005 s]: End   prepare_response_msg
+        * [0.006 s]: Begin send_response_msg
+        * [0.007 s]: End   send_response_msg
+        * [0.008 s]: End   receive_request_msg
+
+        Let's assume that the events are stored in the `network_trace` object.
+
+        >>> network_trace = Trace()
+        >>> # Add events to network_trace
 
         If we focus on the duration of request and response, respectively, we can merge the request-related events
         into an request-event and response-related events into an response-event by calling
-        >>> network_trace = Trace()
-        >>> # Add events to ``network_trace``
+
         >>> trace_analyzer = TraceAnalyzer(network_trace)
         >>> trace_analyzer.merge_events('receive_request_msg+*process_request_msg-', 'request_event')
         >>> trace_analyzer.merge_events('prepare_response_msg+*receive_request_msg-', 'response_event')
 
         Usage of symbols in `event_pattern`:
-        '+' following an event name: the event begins
-        '-' following an event name: the event ends
-        '*': arbitrary events
+
+        * '+' following an event name: the event begins
+        * '-' following an event name: the event ends
+        * '*': arbitrary events
 
         The resulted merged event sequence will be:
-        [0.001 s]: Begin request_event
-        [0.003 s]: End   request_event
-        [0.004 s]: Begin response_event
-        [0.008 s]: End   response_event
+
+        * [0.001 s]: Begin request_event
+        * [0.003 s]: End   request_event
+        * [0.004 s]: Begin response_event
+        * [0.008 s]: End   response_event
 
         :param event_pattern: a string for matching an event sequence
         :param merged_event_name: the name of the new event for the matched event sequence
