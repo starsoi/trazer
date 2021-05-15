@@ -14,10 +14,10 @@ def setup_trace(n_events=3, n_repeat=0, prefix='event'):
     for _ in range(n_repeat + 1):
         for i in range(n_events):
             trace.add_event(TraceEventDurationBegin(f'{prefix}{i:03}', ts))
-            ts += 0.001
+            ts += 1
         for i in reversed(range(n_events)):
             trace.add_event(TraceEventDurationEnd(f'{prefix}{i:03}', ts))
-            ts += 0.001
+            ts += 1
     return trace
 
 
@@ -138,7 +138,7 @@ def test_merge_events_repeat0():
     assert merged_event_begin.name == 'merged_event'
     assert merged_event_end.name == 'merged_event'
     assert merged_event_begin.ts == 0
-    assert merged_event_end.ts == 4000
+    assert merged_event_end.ts == 4
 
 
 def test_merge_events_repeat2():
@@ -150,21 +150,21 @@ def test_merge_events_repeat2():
         assert e.name == 'merged_event'
     for i, e in enumerate(trace.events[-6::2]):
         assert isinstance(e, TraceEventDurationBegin)
-        assert e.ts == pytest.approx(6000 * i)
+        assert e.ts == pytest.approx(6 * i)
     for i, e in enumerate(trace.events[-5::2]):
         assert isinstance(e, TraceEventDurationEnd)
-        assert e.ts == pytest.approx(4000 + 6000 * i)
+        assert e.ts == pytest.approx(4 + 6 * i)
 
 
 def test_merge_events_repeat2_but_match_only_repetition():
     trace = setup_trace(n_events=3, n_repeat=2)
-    trace.add_event(TraceEventDurationBegin('final_event', 0.1))
+    trace.add_event(TraceEventDurationBegin('final_event', 100))
     trace_analyzer = TraceAnalyzer(trace)
     trace_analyzer.merge_events('event000+*event000-final_event+', 'merged_event')
     assert trace.events[-3].name != 'merged_event'
     assert isinstance(trace.events[-2], TraceEventDurationBegin)
     assert trace.events[-2].name == 'merged_event'
-    assert trace.events[-2].ts == pytest.approx(12000)
+    assert trace.events[-2].ts == pytest.approx(12)
     assert isinstance(trace.events[-1], TraceEventDurationEnd)
     assert trace.events[-1].name == 'merged_event'
-    assert trace.events[-1].ts == pytest.approx(100000)
+    assert trace.events[-1].ts == pytest.approx(100)

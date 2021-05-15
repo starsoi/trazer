@@ -14,7 +14,7 @@ def test_trace_event_base_tef():
         'name': 'event-name',
         'pid': 1,
         'tid': 2,
-        'ts': 1.23 * 1e6,
+        'ts': 1.23 * 1e3,
         'args': {'attr': 'foo'},
     }
 
@@ -23,7 +23,7 @@ def test_duration_begin_events():
     ts = 123
     event = TraceEventDurationBegin('duration-event', ts)
     assert event.tef['ph'] == 'B'
-    assert event.tef['ts'] == ts * 1e6
+    assert event.tef['ts'] == ts * 1e3
 
     event.pid = 1
     event.tid = 2
@@ -33,7 +33,7 @@ def test_duration_begin_events():
         'ph': 'B',
         'pid': 1,
         'tid': 2,
-        'ts': ts * 1e6,
+        'ts': ts * 1e3,
         'args': {},
     }
 
@@ -42,7 +42,7 @@ def test_duration_end_events():
     ts = 124
     event = TraceEventDurationEnd('duration-event', ts)
     assert event.tef['ph'] == 'E'
-    assert event.tef['ts'] == ts * 1e6
+    assert event.tef['ts'] == ts * 1e3
 
 
 def test_instant_event():
@@ -50,7 +50,7 @@ def test_instant_event():
     event = TraceEventInstant('instant-event', ts)
     assert event.tef['ph'] == 'i'
     assert 's' in event.tef
-    assert event.tef['ts'] == ts * 1e6
+    assert event.tef['ts'] == ts * 1e3
 
 
 def test_counter_event():

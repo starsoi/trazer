@@ -48,9 +48,16 @@ class TraceEvent(ABC):
     """An abstract class containing the basic properties for a trace event."""
 
     def __init__(self, name: str, ts: float, pid: int = 0, tid: int = 0, **kwargs):
+        """Initialize a trace event.
+
+        :param name: Name of the event. It shall be unique in the trace.
+        :param ts: Timestamp of the event in milliseconds.
+        :param pid: Process ID of the event (for execution trace).
+        :param tid: Thread ID of the event (for execution trace).
+        :param kwargs: Other attributes to be associated with the event.
+        """
         self.name = name
-        self._ts = ts  # original input timestamp in seconds
-        self.ts = ts * 1e6  # unit in trazer event format is micro-second
+        self.ts = ts
         self.pid = pid
         self.tid = tid
         self.args = kwargs
@@ -78,14 +85,26 @@ class TraceEvent(ABC):
 
 
 class TraceEventDurationBegin(TraceEvent):
+    """A ``TraceEvent`` representing the beginning of an event with certain duration.
+    The complete span of an event with certain duration is defined by its corresponding ``TraceEventDurationBegin``
+    and ``TraceEventDurationEnd``
+    """
+
     _shortname = 'B'
 
 
 class TraceEventDurationEnd(TraceEvent):
+    """A ``TraceEvent`` representing the end of an event with certain duration.
+    The complete span of an event with certain duration is defined by its corresponding ``TraceEventDurationBegin``
+    and ``TraceEventDurationEnd``
+    """
+
     _shortname = 'E'
 
 
 class TraceEventCounter(TraceEvent):
+    """A ``TraceEvent`` representing a utility event containing a counter which changes with time."""
+
     _shortname = 'C'
 
     def __init__(self, name, ts, value, pid=0, tid=0):
@@ -94,4 +113,6 @@ class TraceEventCounter(TraceEvent):
 
 
 class TraceEventInstant(TraceEvent):
+    """A ``TraceEvent`` representing an instantaneous event without any duration."""
+
     _shortname = 'I'

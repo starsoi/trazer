@@ -352,8 +352,8 @@ class TraceAnalyzer(object):
             last_event = self._map_string_index_to_event(m.start(len(m.groups())))
 
             self.trace.add_event(
-                TraceEventDurationBegin(merged_event_name, first_event._ts, pid)
+                TraceEventDurationBegin(merged_event_name, first_event.ts, pid)
             )
             self.trace.add_event(
-                TraceEventDurationEnd(merged_event_name, last_event._ts, pid)
+                TraceEventDurationEnd(merged_event_name, last_event.ts, pid)
             )

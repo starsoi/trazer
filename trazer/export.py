@@ -26,8 +26,7 @@ def to_tef(trace_or_event: Union[Trace, TraceEvent]) -> Dict[str, Any]:
             'displayTimeUnit': 'ms',
         }
     elif isinstance(trace_or_event, TraceEvent):
-        trace_or_event.__dict__.update()
-        return {
+        tef_dict = {
             k: v
             for k, v in {
                 **trace_or_event.__dict__,
@@ -36,5 +35,7 @@ def to_tef(trace_or_event: Union[Trace, TraceEvent]) -> Dict[str, Any]:
             }.items()
             if not k.startswith('_') and k != 'tef'
         }
+        tef_dict['ts'] *= 1e3  # timestamp in tef is in micro-seconds
+        return tef_dict
     else:
         raise NotImplementedError
