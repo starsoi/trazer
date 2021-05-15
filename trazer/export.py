@@ -13,11 +13,11 @@ _TEF_MANDATORY_PROPS: Dict[Type[TraceEvent], Dict[str, Any]] = {
 
 
 def to_tef(trace_or_event: Union[Trace, TraceEvent]) -> Dict[str, Any]:
-    """Export the trace to a dict corresponding to the Trace Event Format JSON.
-    (see https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview)
+    """Export the trace to a dict corresponding to the
+    `Trace Event Format <https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview>`_ JSON.
 
     :param trace_or_event: A complete trace or an individual trace event to be exported.
-    :return: A dict in Trace Event Format.
+    :return: A JSON dict in Trace Event Format.
     """
 
     if isinstance(trace_or_event, Trace):

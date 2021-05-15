@@ -5,6 +5,7 @@
 
 Welcome to Trazer's documentation!
 ==================================
+.. mdinclude:: ../../README.md
 
 .. toctree::
    :maxdepth: 2

@@ -12,6 +12,14 @@ trazer.analyzer module
    :undoc-members:
    :show-inheritance:
 
+trazer.export module
+--------------------
+
+.. automodule:: trazer.export
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 trazer.trace module
 -------------------
 
