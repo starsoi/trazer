@@ -319,7 +319,14 @@ class TraceAnalyzer(object):
         Let's assume that the events are stored in the `network_trace` object.
 
         >>> network_trace = Trace()
-        >>> # Add events to network_trace
+        >>> network_trace.add_event(TraceEventDurationBegin('receive_request_msg', 1))
+        >>> network_trace.add_event(TraceEventDurationBegin('process_request_msg', 2))
+        >>> network_trace.add_event(TraceEventDurationEnd('process_request_msg', 3))
+        >>> network_trace.add_event(TraceEventDurationBegin('prepare_response_msg', 4))
+        >>> network_trace.add_event(TraceEventDurationEnd('prepare_response_msg', 5))
+        >>> network_trace.add_event(TraceEventDurationBegin('send_response_msg', 6))
+        >>> network_trace.add_event(TraceEventDurationEnd('send_response_msg', 7))
+        >>> network_trace.add_event(TraceEventDurationEnd('receive_request_msg', 8))
 
         If we focus on the duration of request and response, respectively, we can merge the request-related events
         into an request-event and response-related events into an response-event by calling
