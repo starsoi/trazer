@@ -2,6 +2,9 @@
 
 A general trace analysis framework for program and network traces.
 
+![Test](https://github.com/starsoi/trazer/actions/workflows/main.yml/badge.svg)
+[![Coverage](https://codecov.io/gh/starsoi/trazer/branch/master/graph/badge.svg?token=HVX3PFO8RF)](https://codecov.io/gh/starsoi/trazer)
+
 ## Getting Started
 
 ### Prerequisites
