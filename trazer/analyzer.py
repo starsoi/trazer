@@ -318,6 +318,8 @@ class TraceAnalyzer(object):
 
         If we focus on the duration of request and response, respectively, we can merge the request-related events
         into an request-event and response-related events into an response-event by calling
+        >>> network_trace = Trace()
+        >>> # Add events to ``network_trace``
         >>> trace_analyzer = TraceAnalyzer(network_trace)
         >>> trace_analyzer.merge_events('receive_request_msg+*process_request_msg-', 'request_event')
         >>> trace_analyzer.merge_events('prepare_response_msg+*receive_request_msg-', 'response_event')
