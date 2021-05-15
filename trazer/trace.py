@@ -13,10 +13,12 @@ class Trace(object):
 
     @property
     def tef(self):
-        return {'traceEvents': [e.tef for e in self.events], 'displayTimeUnit': 'ms'}
+        import trazer.export as export
+
+        return export.to_tef(self)
 
     @property
-    def json(self):
+    def tef_json(self):
         return json.dumps(self.tef, indent=4)
 
 
@@ -31,29 +33,27 @@ class TraceEvent(ABC):
 
     @property
     def tef(self):
-        return {
-            k: v
-            for k, v in {**self.__dict__, **self.__class__.__dict__}.items()
-            if not k.startswith('_') and k != 'tef'
-        }
+        import trazer.export as export
+
+        return export.to_tef(self)
 
     def __str__(self):
-        return f'[{self.ts} us]: {self.name} ({self.ph})'
+        return f'[{self.ts} us]: {self.name} ({self._shortname})'
 
     def __repr__(self):
         return str(self)
 
 
 class TraceEventDurationBegin(TraceEvent):
-    ph = 'B'
+    _shortname = 'B'
 
 
 class TraceEventDurationEnd(TraceEvent):
-    ph = 'E'
+    _shortname = 'E'
 
 
 class TraceEventCounter(TraceEvent):
-    ph = 'C'
+    _shortname = 'C'
 
     def __init__(self, name, ts, value, pid=0, tid=0):
         super().__init__(name, ts, pid, tid)
@@ -61,5 +61,4 @@ class TraceEventCounter(TraceEvent):
 
 
 class TraceEventInstant(TraceEvent):
-    ph = 'i'
-    s = 'g'
+    _shortname = 'I'

@@ -94,7 +94,7 @@ def test_json_export():
     trace.add_event(event1_end)
     trace.add_event(event2)
 
-    readback = json.loads(trace.json)
+    readback = json.loads(trace.tef_json)
     assert readback['traceEvents'][0] == event1_begin.tef
     assert readback['traceEvents'][1] == event1_end.tef
     assert readback['traceEvents'][2] == event2.tef
