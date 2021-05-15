@@ -1,5 +1,5 @@
-from trazer.tef import (
-    Tracer,
+from trazer.trace import (
+    Trace,
     TraceEvent,
     TraceEventDurationBegin,
     TraceEventDurationEnd,
@@ -63,18 +63,18 @@ def test_counter_event():
 
 
 def test_event_sequence():
-    tracer = Tracer()
+    trace = Trace()
     event1_begin = TraceEventDurationBegin('event1', 123)
     event1_end = TraceEventDurationEnd('event1', 124)
     event2 = TraceEventInstant('event2', 123.5)
 
-    tracer.add_event(event1_begin)
-    tracer.add_event(event1_end)
-    tracer.add_event(event2)
+    trace.add_event(event1_begin)
+    trace.add_event(event1_end)
+    trace.add_event(event2)
 
-    assert tracer.events[0] is event1_begin
-    assert tracer.events[1] is event1_end
-    assert tracer.events[2] is event2
+    assert trace.events[0] is event1_begin
+    assert trace.events[1] is event1_end
+    assert trace.events[2] is event2
 
 
 def test_custom_attributes():
@@ -85,16 +85,16 @@ def test_custom_attributes():
 def test_json_export():
     import json
 
-    tracer = Tracer()
+    trace = Trace()
     event1_begin = TraceEventDurationBegin('event1', 0.001)
     event1_end = TraceEventDurationEnd('event1', 0.002)
     event2 = TraceEventInstant('event2', 0.003)
 
-    tracer.add_event(event1_begin)
-    tracer.add_event(event1_end)
-    tracer.add_event(event2)
+    trace.add_event(event1_begin)
+    trace.add_event(event1_end)
+    trace.add_event(event2)
 
-    readback = json.loads(tracer.json)
+    readback = json.loads(trace.json)
     assert readback['traceEvents'][0] == event1_begin.tef
     assert readback['traceEvents'][1] == event1_end.tef
     assert readback['traceEvents'][2] == event2.tef

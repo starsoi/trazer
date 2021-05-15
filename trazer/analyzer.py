@@ -3,7 +3,7 @@ from enum import Enum
 import math
 import re
 from typing import Dict, List, Type, Tuple
-from trazer.tef import Tracer, TraceEventDurationBegin, TraceEventDurationEnd
+from trazer.trace import Trace, TraceEventDurationBegin, TraceEventDurationEnd
 
 
 CODE_BASE = 52
@@ -25,8 +25,8 @@ class TraceAnalyzer(object):
 
     _re_event = re.compile(r'(\w+)(\W)')
 
-    def __init__(self, tracer: Tracer):
-        self.tracer = tracer
+    def __init__(self, trace: Trace):
+        self.trace = trace
         self._n_codes_per_event_name = 0
         self.event_name_codes: Dict[str, str] = self._create_event_name_codes()
         self.events_string: str = self._create_events_string()
@@ -68,7 +68,7 @@ class TraceAnalyzer(object):
         :return: a dictionary for the mapping from event name to the corresponding alphabetic codes
         """
         # Collect all event names
-        event_names = sorted(set(e.name for e in self.tracer.events))
+        event_names = sorted(set(e.name for e in self.trace.events))
         n_event_names = len(event_names)
         if n_event_names == 0:
             return {}
@@ -186,7 +186,7 @@ class TraceAnalyzer(object):
         :return: the encoded string for the event sequence
         """
         events_string = ''
-        for event in self.tracer.events:
+        for event in self.trace.events:
             event_name_code = self.event_name_codes[event.name]
             event_type_code = self.event_type_codes.get(
                 event.__class__, self.event_type_default_code
@@ -290,11 +290,11 @@ class TraceAnalyzer(object):
         """Map the index of the ``events_string`` to the represented trazer event object.
         The length of a single event in the ``events_string`` is always ``_n_codes_per_event_name + 1``.
         Therefore, ``event_string_index // (_n_codes_per_event_name + 1)`` is the index of the corresponding
-        trazer event object in the ``tracer``.
+        trazer event object in the ``trace``.
         :param event_string_index: The index of an event name code in the ``events_string``.
         :return: The corresponding trazer event object.
         """
-        return self.tracer.events[
+        return self.trace.events[
             event_string_index // (self._n_codes_per_event_name + 1)
         ]
 
@@ -314,11 +314,11 @@ class TraceAnalyzer(object):
         [0.006 s]: Begin send_response_msg
         [0.007 s]: End   send_response_msg
         [0.008 s]: End   receive_request_msg
-        The events are stored in the `network_tracer` object.
+        The events are stored in the `network_trace` object.
 
         If we focus on the duration of request and response, respectively, we can merge the request-related events
         into an request-event and response-related events into an response-event by calling
-        >>> trace_analyzer = TraceAnalyzer(network_tracer)
+        >>> trace_analyzer = TraceAnalyzer(network_trace)
         >>> trace_analyzer.merge_events('receive_request_msg+*process_request_msg-', 'request_event')
         >>> trace_analyzer.merge_events('prepare_response_msg+*receive_request_msg-', 'response_event')
 
@@ -343,9 +343,9 @@ class TraceAnalyzer(object):
             first_event = self._map_string_index_to_event(m.start(1))
             last_event = self._map_string_index_to_event(m.start(len(m.groups())))
 
-            self.tracer.add_event(
+            self.trace.add_event(
                 TraceEventDurationBegin(merged_event_name, first_event._ts, pid)
             )
-            self.tracer.add_event(
+            self.trace.add_event(
                 TraceEventDurationEnd(merged_event_name, last_event._ts, pid)
             )

@@ -4,7 +4,7 @@ from abc import ABC
 import json
 
 
-class Tracer(object):
+class Trace(object):
     def __init__(self):
         self.events: List[TraceEvent] = []
 

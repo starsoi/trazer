@@ -1,28 +1,28 @@
 import pytest
-from trazer.tef import (
-    Tracer,
+from trazer.trace import (
+    Trace,
     TraceEventDurationBegin,
     TraceEventDurationEnd,
     TraceEventInstant,
 )
-from trazer.trace_analyzer import TraceAnalyzer
+from trazer.analyzer import TraceAnalyzer
 
 
-def setup_tracer(n_events=3, n_repeat=0, prefix='event'):
-    tracer = Tracer()
+def setup_trace(n_events=3, n_repeat=0, prefix='event'):
+    trace = Trace()
     ts = 0
     for _ in range(n_repeat + 1):
         for i in range(n_events):
-            tracer.add_event(TraceEventDurationBegin(f'{prefix}{i:03}', ts))
+            trace.add_event(TraceEventDurationBegin(f'{prefix}{i:03}', ts))
             ts += 0.001
         for i in reversed(range(n_events)):
-            tracer.add_event(TraceEventDurationEnd(f'{prefix}{i:03}', ts))
+            trace.add_event(TraceEventDurationEnd(f'{prefix}{i:03}', ts))
             ts += 0.001
-    return tracer
+    return trace
 
 
 def setup_trace_analyzer(n_events=3, n_repeat=0, prefix='event'):
-    return TraceAnalyzer(setup_tracer(n_events, n_repeat, prefix))
+    return TraceAnalyzer(setup_trace(n_events, n_repeat, prefix))
 
 
 def test_event_name_codes_1():
@@ -58,9 +58,9 @@ def test_event_name_codes_104():
 
 
 def test_event_string():
-    tracer = setup_tracer(n_events=3)
-    tracer.add_event(TraceEventInstant('event999', 1))
-    trace_analyzer = TraceAnalyzer(tracer)
+    trace = setup_trace(n_events=3)
+    trace.add_event(TraceEventInstant('event999', 1))
+    trace_analyzer = TraceAnalyzer(trace)
     assert trace_analyzer.events_string == 'A+B+C+C-B-A-D!'
 
 
@@ -121,18 +121,18 @@ def test_map_string_index_to_event():
     trace_analyzer = setup_trace_analyzer(n_events=3)
     # events string = A+B+C+C-B-A-
     assert (
-        trace_analyzer._map_string_index_to_event(0) == trace_analyzer.tracer.events[0]
+        trace_analyzer._map_string_index_to_event(0) == trace_analyzer.trace.events[0]
     )
     assert (
-        trace_analyzer._map_string_index_to_event(10) == trace_analyzer.tracer.events[5]
+        trace_analyzer._map_string_index_to_event(10) == trace_analyzer.trace.events[5]
     )
 
 
 def test_merge_events_repeat0():
     trace_analyzer = setup_trace_analyzer(n_events=3)
     trace_analyzer.merge_events('event000+*event001-', 'merged_event')
-    merged_event_begin = trace_analyzer.tracer.events[-2]
-    merged_event_end = trace_analyzer.tracer.events[-1]
+    merged_event_begin = trace_analyzer.trace.events[-2]
+    merged_event_end = trace_analyzer.trace.events[-1]
     assert isinstance(merged_event_begin, TraceEventDurationBegin)
     assert isinstance(merged_event_end, TraceEventDurationEnd)
     assert merged_event_begin.name == 'merged_event'
@@ -143,28 +143,28 @@ def test_merge_events_repeat0():
 
 def test_merge_events_repeat2():
     trace_analyzer = setup_trace_analyzer(n_events=3, n_repeat=2)
-    tracer = trace_analyzer.tracer
+    trace = trace_analyzer.trace
     trace_analyzer.merge_events('event000+*event001-', 'merged_event')
     # 3 merged_event expected
-    for e in tracer.events[-6:]:
+    for e in trace.events[-6:]:
         assert e.name == 'merged_event'
-    for i, e in enumerate(tracer.events[-6::2]):
+    for i, e in enumerate(trace.events[-6::2]):
         assert isinstance(e, TraceEventDurationBegin)
         assert e.ts == pytest.approx(6000 * i)
-    for i, e in enumerate(tracer.events[-5::2]):
+    for i, e in enumerate(trace.events[-5::2]):
         assert isinstance(e, TraceEventDurationEnd)
         assert e.ts == pytest.approx(4000 + 6000 * i)
 
 
 def test_merge_events_repeat2_but_match_only_repetition():
-    tracer = setup_tracer(n_events=3, n_repeat=2)
-    tracer.add_event(TraceEventDurationBegin('final_event', 0.1))
-    trace_analyzer = TraceAnalyzer(tracer)
+    trace = setup_trace(n_events=3, n_repeat=2)
+    trace.add_event(TraceEventDurationBegin('final_event', 0.1))
+    trace_analyzer = TraceAnalyzer(trace)
     trace_analyzer.merge_events('event000+*event000-final_event+', 'merged_event')
-    assert tracer.events[-3].name != 'merged_event'
-    assert isinstance(tracer.events[-2], TraceEventDurationBegin)
-    assert tracer.events[-2].name == 'merged_event'
-    assert tracer.events[-2].ts == pytest.approx(12000)
-    assert isinstance(tracer.events[-1], TraceEventDurationEnd)
-    assert tracer.events[-1].name == 'merged_event'
-    assert tracer.events[-1].ts == pytest.approx(100000)
+    assert trace.events[-3].name != 'merged_event'
+    assert isinstance(trace.events[-2], TraceEventDurationBegin)
+    assert trace.events[-2].name == 'merged_event'
+    assert trace.events[-2].ts == pytest.approx(12000)
+    assert isinstance(trace.events[-1], TraceEventDurationEnd)
+    assert trace.events[-1].name == 'merged_event'
+    assert trace.events[-1].ts == pytest.approx(100000)
