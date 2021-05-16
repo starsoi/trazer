@@ -4,7 +4,8 @@
 ![Doctest](https://github.com/starsoi/trazer/actions/workflows/doctest.yml/badge.svg)
 [![Coverage](https://codecov.io/gh/starsoi/trazer/branch/master/graph/badge.svg?token=HVX3PFO8RF)](https://codecov.io/gh/starsoi/trazer)
 
-A general trace analysis framework for program and network traces.
+A general trace analysis framework for execution and network traces, 
+focusing on event chain analysis.
 
 
 ## Getting Started

@@ -1,0 +1,4 @@
+[flake8]
+show-source
+max-line-length = 120
+
