@@ -54,6 +54,50 @@ focusing on event chain analysis.
 
 Next, store the string into a `.json` file and open it using the trace tool `chrome://tracing` in Chrome.
 
+### Merge Event Chains
+
+Different related events in an event chain can be merged and represented as a merged event in the higher hierarchical level.
+
+An event chain is described using an event pattern. Special symbols in the notation:
+
+* `+` following an event name: the event begins.
+* `-` following an event name: the event ends.
+* `*`: arbitrary events, excluding repetitions.
+
+```python
+>>> from trazer.trace import Trace, TraceEventDurationBegin, TraceEventDurationEnd
+>>> trace = Trace()
+
+# Add an event chain: event1 begins -> event2 begins -> event2 ends -> event1 ends
+>>> trace.add_events([
+... TraceEventDurationBegin('event1', 1),
+... TraceEventDurationBegin('event2', 2),
+... TraceEventDurationEnd('event2', 3),
+... TraceEventDurationEnd('event1', 4)
+... ])
+
+>>> print(trace)
+[1 ms]: event1 (B)
+[2 ms]: event2 (B)
+[3 ms]: event2 (E)
+[4 ms]: event1 (E)
+
+>>> from trazer.analyzer import TraceAnalyzer
+>>> trace_analyzer = TraceAnalyzer(trace)
+
+# Merge all events belonging to the event chain
+>>> print(trace_analyzer.merge_events('event1+event2+event2-event1-', 'event_chain'))
+[1 ms]: event_chain (B)
+[4 ms]: event_chain (E)
+
+# Or use an alternative pattern employing wildcards
+>>> trace_analyzer = TraceAnalyzer(trace)
+>>> print(trace_analyzer.merge_events('event1+*-event1-', 'event_chain'))
+[1 ms]: event_chain (B)
+[4 ms]: event_chain (E)
+
+```
+
 ## Contributing
 
 1. Install development dependencies

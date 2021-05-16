@@ -52,6 +52,12 @@ class Trace(object):
         """
         return json.dumps(self.tef, indent=4)
 
+    def __str__(self):
+        """Get the string representation of a trace.
+        :return: The string representation of each events per line.
+        """
+        return "\n".join(str(event) for event in self.events)
+
 
 class TraceEvent(ABC):
     """An abstract class containing the basic properties for a trace event."""
@@ -87,7 +93,7 @@ class TraceEvent(ABC):
 
         :return: The string representation.
         """
-        return f'[{self.ts} us]: {self.name} ({self._shortname})'
+        return f'[{self.ts} ms]: {self.name} ({self._shortname})'
 
     def __repr__(self):
         return str(self)
