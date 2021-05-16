@@ -26,7 +26,11 @@ class TraceAnalyzer(object):
     _re_event = re.compile(r'(\w+)(\W)')
 
     def __init__(self, trace: Trace):
-        self.trace = trace
+        """Initialize a Trace Analyzer
+        :param trace: The trace to be analyzed.
+        """
+        self.trace = trace  # Original trace to be analyzed
+        self.analyzer_trace: Trace = Trace()  # Annotated trace
         self._n_codes_per_event_name = 0
         self.event_name_codes: Dict[str, str] = self._create_event_name_codes()
         self.events_string: str = self._create_events_string()
@@ -298,12 +302,10 @@ class TraceAnalyzer(object):
             event_string_index // (self._n_codes_per_event_name + 1)
         ]
 
-    def merge_events(
-        self, event_pattern: str, merged_event_name: str, pid: int = 1000
-    ) -> None:
+    def merge_events(self, event_pattern: str, merged_event_name: str) -> Trace:
         """Create a new event for a specific event sequence matching the given ``event_pattern``.
-        The new event is typically assigned to a different pid than the original events, so that they can be visualized
-        in a different group.
+        The new event is added into the ``analyzer_trace`` which is separated from the original trace,
+        so that they can be exported into different groups.
 
         For example, we have an event sequence for processing a network message:
 
@@ -341,7 +343,7 @@ class TraceAnalyzer(object):
         * '-' following an event name: the event ends
         * '*': arbitrary events
 
-        The resulted merged event sequence will be:
+        The resulted merged event sequence in the ``analyzer_trace`` will be:
 
         * [0.001 s]: Begin request_event
         * [0.003 s]: End   request_event
@@ -350,17 +352,21 @@ class TraceAnalyzer(object):
 
         :param event_pattern: a string for matching an event sequence
         :param merged_event_name: the name of the new event for the matched event sequence
-        :param pid: pid for the merged event
-        :return: None
+        :return: The ``analyzer_trace`` storing the merged events.
         """
         encoded_event_pattern = self._encode_event_pattern(event_pattern)
         for m in re.finditer(encoded_event_pattern, self.events_string):
             first_event = self._map_string_index_to_event(m.start(1))
             last_event = self._map_string_index_to_event(m.start(len(m.groups())))
 
-            self.trace.add_event(
-                TraceEventDurationBegin(merged_event_name, first_event.ts, pid)
+            self.analyzer_trace.add_event(
+                TraceEventDurationBegin(merged_event_name, first_event.ts)
             )
-            self.trace.add_event(
-                TraceEventDurationEnd(merged_event_name, last_event.ts, pid)
+            self.analyzer_trace.add_event(
+                TraceEventDurationEnd(merged_event_name, last_event.ts)
             )
+
+        self.analyzer_trace.events.sort(
+            key=lambda e: e.ts
+        )  # Sort the events by the order of timestamp
+        return self.analyzer_trace
