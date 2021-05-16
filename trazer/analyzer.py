@@ -370,3 +370,25 @@ class TraceAnalyzer(object):
             key=lambda e: e.ts
         )  # Sort the events by the order of timestamp
         return self.analyzer_trace
+
+    def to_tef_json(self, analyzer_trace_pid: int) -> str:
+        """Merge the analyzer trace with the original trace so that they can be visualized in the same view.
+        Export the merged trace in Trace Event Format JSON.
+
+        The export works on a copy, so the original trace and the analyzer trace are not modified.
+
+        :param analyzer_trace_pid: Process ID for the merged events.
+        :return: The JSON string.
+        """
+        from copy import copy
+
+        merged_trace = Trace()
+        merged_trace.events += self.trace.events
+
+        pid_modified_events = [copy(event) for event in self.analyzer_trace.events]
+        for event in pid_modified_events:
+            event.pid = analyzer_trace_pid
+
+        merged_trace.events += pid_modified_events
+
+        return merged_trace.tef_json

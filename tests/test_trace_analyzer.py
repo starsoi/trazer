@@ -169,3 +169,17 @@ def test_merge_events_repeat2_but_match_only_repetition():
     assert isinstance(analyzer_trace.events[-1], TraceEventDurationEnd)
     assert analyzer_trace.events[-1].name == 'merged_event'
     assert analyzer_trace.events[-1].ts == pytest.approx(100)
+
+
+def test_export_merged_trace_to_tef_json():
+    trace_analyzer = setup_trace_analyzer(n_repeat=1)
+    trace_analyzer.merge_events('event000+*event000-', 'merged_event')
+    exported_tef_json = trace_analyzer.to_tef_json(1000)
+
+    expected_trace = trace_analyzer.trace
+    expected_trace.add_event(TraceEventDurationBegin('merged_event', 0, pid=1000))
+    expected_trace.add_event(TraceEventDurationEnd('merged_event', 5, pid=1000))
+    expected_trace.add_event(TraceEventDurationBegin('merged_event', 6, pid=1000))
+    expected_trace.add_event(TraceEventDurationEnd('merged_event', 11, pid=1000))
+
+    assert exported_tef_json == expected_trace.tef_json
