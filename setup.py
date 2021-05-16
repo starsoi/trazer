@@ -5,7 +5,6 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="trazer",
-    version="0.1.1a",
     author="Hongyan Zhang",
     author_email="starsoi@gmail.com",
     description="A generic trace analysis framework.",
