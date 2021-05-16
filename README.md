@@ -4,7 +4,7 @@
 ![Doctest](https://github.com/starsoi/trazer/actions/workflows/doctest.yml/badge.svg)
 [![Coverage](https://codecov.io/gh/starsoi/trazer/branch/master/graph/badge.svg?token=HVX3PFO8RF)](https://codecov.io/gh/starsoi/trazer)
 
-A general trace analysis framework for execution and network traces, 
+A general trace analysis framework (**tra**ce analy**zer**) for execution and network traces, 
 focusing on event chain analysis.
 
 
@@ -27,7 +27,7 @@ focusing on event chain analysis.
 
 ### Export Trace to Chrome Tracing JSON
 ```python
->>> print(trace.tef_json)  # Exported timestamps are in microsecond
+>>> print(trace.tef_json)  # Exported timestamps are in microsecond  
 {
     "traceEvents": [
         {
@@ -96,6 +96,16 @@ An event chain is described using an event pattern. Special symbols in the notat
 [1 ms]: event_chain (B)
 [4 ms]: event_chain (E)
 
+```
+
+### Export Trace with Merged Events
+
+The merged events can be visualized together with the original trace in the same view.
+For visualization in `chrome://tracing`, a dedicated process ID needs to be assigned to
+the merged events, such that they will be displayed separately from the original trace.
+
+```python
+trace_analyzer.to_tef_json(5555)  # Process ID = 5555
 ```
 
 ## Contributing
