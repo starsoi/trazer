@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List
+from typing import List, Iterable
 from abc import ABC
 import json
 
@@ -23,6 +23,15 @@ class Trace(object):
         :return: None
         """
         self.events.append(event)
+
+    def add_events(self, events: Iterable[TraceEvent]):
+        """Add trace events from an iterable into the trace.
+
+        :param events: An iterable providing trace events.
+        :return: None
+        """
+        for event in events:
+            self.add_event(event)
 
     @property
     def tef(self):
