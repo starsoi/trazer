@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List
+from typing import List, Iterable
 from abc import ABC
 import json
 
@@ -24,6 +24,15 @@ class Trace(object):
         """
         self.events.append(event)
 
+    def add_events(self, events: Iterable[TraceEvent]):
+        """Add trace events from an iterable into the trace.
+
+        :param events: An iterable providing trace events.
+        :return: None
+        """
+        for event in events:
+            self.add_event(event)
+
     @property
     def tef(self):
         """Get a dict containing the properties required for the Trace Event Format.
@@ -42,6 +51,12 @@ class Trace(object):
         :return: The JSON string.
         """
         return json.dumps(self.tef, indent=4)
+
+    def __str__(self):
+        """Get the string representation of a trace.
+        :return: The string representation of each events per line.
+        """
+        return "\n".join(str(event) for event in self.events)
 
 
 class TraceEvent(ABC):
@@ -78,7 +93,7 @@ class TraceEvent(ABC):
 
         :return: The string representation.
         """
-        return f'[{self.ts} us]: {self.name} ({self._shortname})'
+        return f'[{self.ts} ms]: {self.name} ({self._shortname})'
 
     def __repr__(self):
         return str(self)

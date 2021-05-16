@@ -26,13 +26,17 @@ class TraceAnalyzer(object):
     _re_event = re.compile(r'(\w+)(\W)')
 
     def __init__(self, trace: Trace):
-        self.trace = trace
+        """Initialize a Trace Analyzer
+        :param trace: The trace to be analyzed.
+        """
+        self.trace = trace  # Original trace to be analyzed
+        self.analyzer_trace: Trace = Trace()  # Annotated trace
         self._n_codes_per_event_name = 0
         self.event_name_codes: Dict[str, str] = self._create_event_name_codes()
         self.events_string: str = self._create_events_string()
 
     def _validate_event_name(self, event_names: List[str]) -> None:
-        """Validates all the event names and raises ValueError if any invalid event name is found in the trazer.
+        """Validates all the event names and raises ValueError if any invalid event name is found in the trace.
         Trace Analyzer has some limitation to the allowed characters in the event name, i.e. all symbols used for the
         `event_type_codes` are not allowed to appear in the event name.
 
@@ -258,7 +262,7 @@ class TraceAnalyzer(object):
                 event_name, event_type_code = m.group(1), m.group(2)
                 if event_name not in self.event_name_codes:
                     raise ValueError(
-                        f'Event name "{event_name}" not found in the trazer.'
+                        f'Event name "{event_name}" not found in the trace.'
                     )
                 if event_type_code not in [
                     *self._event_type_codes.values(),
@@ -287,53 +291,57 @@ class TraceAnalyzer(object):
         return encoded_event_pattern
 
     def _map_string_index_to_event(self, event_string_index: int):
-        """Map the index of the ``events_string`` to the represented trazer event object.
+        """Map the index of the ``events_string`` to the represented trace event object.
         The length of a single event in the ``events_string`` is always ``_n_codes_per_event_name + 1``.
         Therefore, ``event_string_index // (_n_codes_per_event_name + 1)`` is the index of the corresponding
-        trazer event object in the ``trace``.
+        trace event object in the ``trace``.
         :param event_string_index: The index of an event name code in the ``events_string``.
-        :return: The corresponding trazer event object.
+        :return: The corresponding trace event object.
         """
         return self.trace.events[
             event_string_index // (self._n_codes_per_event_name + 1)
         ]
 
-    def merge_events(
-        self, event_pattern: str, merged_event_name: str, pid: int = 1000
-    ) -> None:
+    def merge_events(self, event_pattern: str, merged_event_name: str) -> Trace:
         """Create a new event for a specific event sequence matching the given ``event_pattern``.
-        The new event is typically assigned to a different pid than the original events, so that they can be visualized
-        in a different group.
+        The new event is added into the ``analyzer_trace`` which is separated from the original trace,
+        so that they can be exported into different groups.
 
         For example, we have an event sequence for processing a network message:
 
-        * [0.001 s]: Begin receive_request_msg
-        * [0.002 s]: Begin process_request_msg
-        * [0.003 s]: End   process_request_msg
-        * [0.004 s]: Begin prepare_response_msg
-        * [0.005 s]: End   prepare_response_msg
-        * [0.006 s]: Begin send_response_msg
-        * [0.007 s]: End   send_response_msg
-        * [0.008 s]: End   receive_request_msg
+        * 0.001 s: Begin receive_request_msg
+        * 0.002 s: Begin process_request_msg
+        * 0.003 s: End   process_request_msg
+        * 0.004 s: Begin prepare_response_msg
+        * 0.005 s: End   prepare_response_msg
+        * 0.006 s: Begin send_response_msg
+        * 0.007 s: End   send_response_msg
+        * 0.008 s: End   receive_request_msg
 
-        Let's assume that the events are stored in the `network_trace` object.
+        Let's assume that the events are to be stored in the `network_trace` object.
 
         >>> network_trace = Trace()
-        >>> network_trace.add_event(TraceEventDurationBegin('receive_request_msg', 1))
-        >>> network_trace.add_event(TraceEventDurationBegin('process_request_msg', 2))
-        >>> network_trace.add_event(TraceEventDurationEnd('process_request_msg', 3))
-        >>> network_trace.add_event(TraceEventDurationBegin('prepare_response_msg', 4))
-        >>> network_trace.add_event(TraceEventDurationEnd('prepare_response_msg', 5))
-        >>> network_trace.add_event(TraceEventDurationBegin('send_response_msg', 6))
-        >>> network_trace.add_event(TraceEventDurationEnd('send_response_msg', 7))
-        >>> network_trace.add_event(TraceEventDurationEnd('receive_request_msg', 8))
+        >>> network_trace.add_events([
+        ...     TraceEventDurationBegin('receive_request_msg', 1),
+        ...     TraceEventDurationBegin('process_request_msg', 2),
+        ...     TraceEventDurationEnd('process_request_msg', 3),
+        ...     TraceEventDurationBegin('prepare_response_msg', 4),
+        ...     TraceEventDurationEnd('prepare_response_msg', 5),
+        ...     TraceEventDurationBegin('send_response_msg', 6),
+        ...     TraceEventDurationBegin('send_response_msg', 7),
+        ...     TraceEventDurationEnd('receive_request_msg', 8)
+        ... ])
 
         If we focus on the duration of request and response, respectively, we can merge the request-related events
         into an request-event and response-related events into an response-event by calling
 
         >>> trace_analyzer = TraceAnalyzer(network_trace)
-        >>> trace_analyzer.merge_events('receive_request_msg+*process_request_msg-', 'request_event')
-        >>> trace_analyzer.merge_events('prepare_response_msg+*receive_request_msg-', 'response_event')
+        >>> trace_analyzer.merge_events('receive_request_msg+*process_request_msg-',
+        ...                             'request_event')  # doctest: +ELLIPSIS
+        <trazer.trace.Trace object at ...>
+        >>> trace_analyzer.merge_events('prepare_response_msg+*receive_request_msg-',
+        ...                             'response_event')  # doctest: +ELLIPSIS
+        <trazer.trace.Trace object at ...>
 
         Usage of symbols in `event_pattern`:
 
@@ -341,26 +349,53 @@ class TraceAnalyzer(object):
         * '-' following an event name: the event ends
         * '*': arbitrary events
 
-        The resulted merged event sequence will be:
+        The merged event sequence will be stored in the ``analyzer_trace``.
 
-        * [0.001 s]: Begin request_event
-        * [0.003 s]: End   request_event
-        * [0.004 s]: Begin response_event
-        * [0.008 s]: End   response_event
+        >>> print(trace_analyzer.analyzer_trace)
+        [1 ms]: request_event (B)
+        [3 ms]: request_event (E)
+        [4 ms]: response_event (B)
+        [8 ms]: response_event (E)
 
         :param event_pattern: a string for matching an event sequence
         :param merged_event_name: the name of the new event for the matched event sequence
-        :param pid: pid for the merged event
-        :return: None
+        :return: The ``analyzer_trace`` containing the merged events.
         """
         encoded_event_pattern = self._encode_event_pattern(event_pattern)
         for m in re.finditer(encoded_event_pattern, self.events_string):
             first_event = self._map_string_index_to_event(m.start(1))
             last_event = self._map_string_index_to_event(m.start(len(m.groups())))
 
-            self.trace.add_event(
-                TraceEventDurationBegin(merged_event_name, first_event.ts, pid)
+            self.analyzer_trace.add_event(
+                TraceEventDurationBegin(merged_event_name, first_event.ts)
             )
-            self.trace.add_event(
-                TraceEventDurationEnd(merged_event_name, last_event.ts, pid)
+            self.analyzer_trace.add_event(
+                TraceEventDurationEnd(merged_event_name, last_event.ts)
             )
+
+        self.analyzer_trace.events.sort(
+            key=lambda e: e.ts
+        )  # Sort the events by the order of timestamp
+        return self.analyzer_trace
+
+    def to_tef_json(self, analyzer_trace_pid: int) -> str:
+        """Merge the analyzer trace with the original trace so that they can be visualized in the same view.
+        Export the merged trace in Trace Event Format JSON.
+
+        The export works on a copy, so the original trace and the analyzer trace are not modified.
+
+        :param analyzer_trace_pid: Process ID for the merged events.
+        :return: The JSON string.
+        """
+        from copy import copy
+
+        merged_trace = Trace()
+        merged_trace.events += self.trace.events
+
+        pid_modified_events = [copy(event) for event in self.analyzer_trace.events]
+        for event in pid_modified_events:
+            event.pid = analyzer_trace_pid
+
+        merged_trace.events += pid_modified_events
+
+        return merged_trace.tef_json

@@ -131,8 +131,8 @@ def test_map_string_index_to_event():
 def test_merge_events_repeat0():
     trace_analyzer = setup_trace_analyzer(n_events=3)
     trace_analyzer.merge_events('event000+*event001-', 'merged_event')
-    merged_event_begin = trace_analyzer.trace.events[-2]
-    merged_event_end = trace_analyzer.trace.events[-1]
+    merged_event_begin = trace_analyzer.analyzer_trace.events[-2]
+    merged_event_end = trace_analyzer.analyzer_trace.events[-1]
     assert isinstance(merged_event_begin, TraceEventDurationBegin)
     assert isinstance(merged_event_end, TraceEventDurationEnd)
     assert merged_event_begin.name == 'merged_event'
@@ -143,15 +143,14 @@ def test_merge_events_repeat0():
 
 def test_merge_events_repeat2():
     trace_analyzer = setup_trace_analyzer(n_events=3, n_repeat=2)
-    trace = trace_analyzer.trace
-    trace_analyzer.merge_events('event000+*event001-', 'merged_event')
+    analyzer_trace = trace_analyzer.merge_events('event000+*event001-', 'merged_event')
     # 3 merged_event expected
-    for e in trace.events[-6:]:
+    for e in analyzer_trace.events[-6:]:
         assert e.name == 'merged_event'
-    for i, e in enumerate(trace.events[-6::2]):
+    for i, e in enumerate(analyzer_trace.events[-6::2]):
         assert isinstance(e, TraceEventDurationBegin)
         assert e.ts == pytest.approx(6 * i)
-    for i, e in enumerate(trace.events[-5::2]):
+    for i, e in enumerate(analyzer_trace.events[-5::2]):
         assert isinstance(e, TraceEventDurationEnd)
         assert e.ts == pytest.approx(4 + 6 * i)
 
@@ -160,11 +159,27 @@ def test_merge_events_repeat2_but_match_only_repetition():
     trace = setup_trace(n_events=3, n_repeat=2)
     trace.add_event(TraceEventDurationBegin('final_event', 100))
     trace_analyzer = TraceAnalyzer(trace)
-    trace_analyzer.merge_events('event000+*event000-final_event+', 'merged_event')
-    assert trace.events[-3].name != 'merged_event'
-    assert isinstance(trace.events[-2], TraceEventDurationBegin)
-    assert trace.events[-2].name == 'merged_event'
-    assert trace.events[-2].ts == pytest.approx(12)
-    assert isinstance(trace.events[-1], TraceEventDurationEnd)
-    assert trace.events[-1].name == 'merged_event'
-    assert trace.events[-1].ts == pytest.approx(100)
+    analyzer_trace = trace_analyzer.merge_events(
+        'event000+*event000-final_event+', 'merged_event'
+    )
+    assert len(analyzer_trace.events) == 2
+    assert isinstance(analyzer_trace.events[-2], TraceEventDurationBegin)
+    assert analyzer_trace.events[-2].name == 'merged_event'
+    assert analyzer_trace.events[-2].ts == pytest.approx(12)
+    assert isinstance(analyzer_trace.events[-1], TraceEventDurationEnd)
+    assert analyzer_trace.events[-1].name == 'merged_event'
+    assert analyzer_trace.events[-1].ts == pytest.approx(100)
+
+
+def test_export_merged_trace_to_tef_json():
+    trace_analyzer = setup_trace_analyzer(n_repeat=1)
+    trace_analyzer.merge_events('event000+*event000-', 'merged_event')
+    exported_tef_json = trace_analyzer.to_tef_json(1000)
+
+    expected_trace = trace_analyzer.trace
+    expected_trace.add_event(TraceEventDurationBegin('merged_event', 0, pid=1000))
+    expected_trace.add_event(TraceEventDurationEnd('merged_event', 5, pid=1000))
+    expected_trace.add_event(TraceEventDurationBegin('merged_event', 6, pid=1000))
+    expected_trace.add_event(TraceEventDurationEnd('merged_event', 11, pid=1000))
+
+    assert exported_tef_json == expected_trace.tef_json

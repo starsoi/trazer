@@ -62,7 +62,7 @@ def test_counter_event():
     assert event.tef == {**event.tef, 'args': {event_name: counter_value}}
 
 
-def test_event_sequence():
+def test_add_event_individually():
     trace = Trace()
     event1_begin = TraceEventDurationBegin('event1', 123)
     event1_end = TraceEventDurationEnd('event1', 124)
@@ -75,6 +75,31 @@ def test_event_sequence():
     assert trace.events[0] is event1_begin
     assert trace.events[1] is event1_end
     assert trace.events[2] is event2
+
+
+def test_add_events_from_iterable():
+    trace = Trace()
+    events = [
+        TraceEventDurationBegin('event1', 123),
+        TraceEventDurationEnd('event1', 124),
+        TraceEventInstant('event2', 123.5),
+    ]
+    trace.add_events(events)
+
+    assert trace.events[0] == events[0]
+    assert trace.events[1] == events[1]
+    assert trace.events[2] == events[2]
+
+    events = [
+        TraceEventDurationBegin('event1', 1230),
+        TraceEventDurationEnd('event1', 1240),
+        TraceEventInstant('event2', 1235),
+    ]
+    trace.add_events(e for e in events)
+
+    assert trace.events[3] == events[0]
+    assert trace.events[4] == events[1]
+    assert trace.events[5] == events[2]
 
 
 def test_custom_attributes():
