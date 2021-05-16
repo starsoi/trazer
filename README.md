@@ -12,7 +12,7 @@ focusing on event chain analysis.
 
 ### Prerequisites
 
-* Python >= 3.7
+* Python >= 3.8
 
 ## Usage
 
