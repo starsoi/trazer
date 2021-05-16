@@ -2,5 +2,7 @@
 docs/build
 build/
 dist/
+trazer/_version.py
 trazer.egg-info
 *.pyc
+__pycache__
