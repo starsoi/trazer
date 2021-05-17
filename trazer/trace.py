@@ -1,4 +1,5 @@
 from __future__ import annotations
+from functools import wraps
 from typing import List, Iterable
 from abc import ABC
 import json
@@ -131,3 +132,64 @@ class TraceEventInstant(TraceEvent):
     """A ``TraceEvent`` representing an instantaneous event without any duration."""
 
     _shortname = 'I'
+
+
+def _validate_property_access(func):
+    """Validate the access to the properties of EventChain."""
+
+    @wraps(func)
+    def _func(event_chain: EventChain):
+        if len(event_chain.events) == 0:
+            raise AttributeError(
+                f'EventChain "{event_chain.name}" is empty. Property {func.__name__} does not have value.'
+            )
+        return func(event_chain)
+
+    return _func
+
+
+class EventChain(Trace):
+    """An event chain consists of a set of related events. It is basically a subset of a trace."""
+
+    def __init__(self, name: str):
+        """Initialize an event chain.
+
+        :param name: The name of the event chain.
+        """
+        self.name = name
+        super().__init__()
+
+    @property
+    @_validate_property_access
+    def ts(self) -> float:
+        """Get the timestamp of the beginning of the event chain.
+
+        :return: The timestamp of the first event in the event chain.
+        """
+        return self.events[0].ts
+
+    @property
+    @_validate_property_access
+    def dur(self) -> float:
+        """Get the duration of the event chain.
+
+        :return: The time difference between the last and the first event in the event chain.
+        """
+        return self.events[-1].ts - self.events[0].ts
+
+    @property
+    @_validate_property_access
+    def begin_event(self) -> TraceEvent:
+        """Get the first event in the event chain.
+
+        :return: The first event.
+        """
+        return self.events[0]
+
+    @property
+    @_validate_property_access
+    def end_event(self) -> TraceEvent:
+        """Get the last event in the event chain.
+        :return: The last event.
+        """
+        return self.events[-1]
