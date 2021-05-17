@@ -18,7 +18,7 @@ focusing on event chain analysis.
 
 ### Create Trace and Add Events
 ```python
->>> from trazer.trace import Trace, TraceEventDurationBegin, TraceEventDurationEnd
+>>> from trazer import Trace, TraceEventDurationBegin, TraceEventDurationEnd
 >>> trace = Trace()
 >>> trace.add_event(TraceEventDurationBegin('my_event', 1.0))  # my_event begins at 1.0 ms
 >>> trace.add_event(TraceEventDurationEnd('my_event', 2.0))  # my_event ends at 2.0 ms
@@ -65,7 +65,7 @@ An event chain is described using an event pattern. Special symbols in the notat
 * `*`: arbitrary events, excluding repetitions.
 
 ```python
->>> from trazer.trace import Trace, TraceEventDurationBegin, TraceEventDurationEnd
+>>> from trazer import Trace, TraceEventDurationBegin, TraceEventDurationEnd
 >>> trace = Trace()
 
 # Add an event chain: event1 begins -> event2 begins -> event2 ends -> event1 ends
@@ -82,7 +82,7 @@ An event chain is described using an event pattern. Special symbols in the notat
 [3 ms]: event2 (E)
 [4 ms]: event1 (E)
 
->>> from trazer.analyzer import TraceAnalyzer
+>>> from trazer import TraceAnalyzer
 >>> trace_analyzer = TraceAnalyzer(trace)
 
 # Merge all events belonging to the event chain
@@ -125,4 +125,4 @@ pip3 install -r requirements.txt
 pre-commit install
 ```
 
-4. Make sure to run `pytest` for testing
+4. Make sure all tests are passed by running `pytest`
