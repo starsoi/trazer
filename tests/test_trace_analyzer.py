@@ -1,11 +1,11 @@
 import pytest
-from trazer.trace import (
+from trazer import (
     Trace,
     TraceEventDurationBegin,
     TraceEventDurationEnd,
     TraceEventInstant,
 )
-from trazer.analyzer import TraceAnalyzer
+from trazer import TraceAnalyzer
 
 
 def setup_trace(n_events=3, n_repeat=0, prefix='event'):

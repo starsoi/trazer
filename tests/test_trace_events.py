@@ -1,11 +1,11 @@
-from trazer.trace import (
+from trazer import (
     Trace,
-    TraceEvent,
     TraceEventDurationBegin,
     TraceEventDurationEnd,
     TraceEventCounter,
     TraceEventInstant,
 )
+from trazer.trace import TraceEvent
 
 
 def test_trace_event_base_tef():

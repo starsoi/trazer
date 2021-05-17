@@ -1,6 +1,7 @@
 from typing import Any, Dict, Type, Union
-from trazer.trace import Trace, TraceEvent
+from trazer import Trace
 import trazer.trace as trace
+from trazer.trace import TraceEvent
 
 
 _TEF_MANDATORY_PROPS: Dict[Type[TraceEvent], Dict[str, Any]] = {
