@@ -1,3 +1,4 @@
+import json
 import pytest
 from trazer import (
     Trace,
@@ -6,23 +7,18 @@ from trazer import (
     TraceEventInstant,
 )
 from trazer import TraceAnalyzer
+from trazer.analyzer import _EventNameNotFoundError
+from tests.utils import setup_trace, setup_trace_analyzer
 
 
-def setup_trace(n_events=3, n_repeat=0, prefix='event'):
+def test_analyzer_with_empty_trace():
     trace = Trace()
-    ts = 0
-    for _ in range(n_repeat + 1):
-        for i in range(n_events):
-            trace.add_event(TraceEventDurationBegin(f'{prefix}{i:03}', ts))
-            ts += 1
-        for i in reversed(range(n_events)):
-            trace.add_event(TraceEventDurationEnd(f'{prefix}{i:03}', ts))
-            ts += 1
-    return trace
-
-
-def setup_trace_analyzer(n_events=3, n_repeat=0, prefix='event'):
-    return TraceAnalyzer(setup_trace(n_events, n_repeat, prefix))
+    trace_analyzer = TraceAnalyzer(trace)
+    assert trace_analyzer.match('test+', 'test') == []
+    assert json.loads(trace_analyzer.to_tef_json(100)) == {
+        'traceEvents': [],
+        'displayTimeUnit': 'ms',
+    }
 
 
 def test_event_name_codes_1():
@@ -98,6 +94,10 @@ def test_encode_valid_event_pattern_with_wildcard():
         == r'(A)\-(?:(?!D\-)[a-zA-Z]{1}\W)*?(D)\-'
     )
     assert (
+        trace_analyzer._encode_event_pattern('event000-*event003+event003-event003-')
+        == r'(A)\-(?:(?!D\-)[a-zA-Z]{1}\W)*?(D)\+(D)\-(D)\-'
+    )
+    assert (
         trace_analyzer._encode_event_pattern('event000+event001+*event002-event003-')
         == r'(A)\+(B)\+(?:(?!A\+|B\+|C\-|D\-)[a-zA-Z]{1}\W)*?(C)\-(D)\-'
     )
@@ -109,7 +109,7 @@ def test_encode_invalid_event_pattern():
         trace_analyzer._encode_event_pattern('event000event111')
     with pytest.raises(ValueError):
         trace_analyzer._encode_event_pattern('event000$')
-    with pytest.raises(ValueError):
+    with pytest.raises(_EventNameNotFoundError):
         trace_analyzer._encode_event_pattern('e0+e0-')
     with pytest.raises(ValueError):
         trace_analyzer._encode_event_pattern('event000+event111')
@@ -163,6 +163,17 @@ def test_match_events_repeat2_only_last_repetition_matched():
     )
     assert len(event_chains) == 1
     assert event_chains[0].events == trace.events[12:19]
+
+
+def test_match_events_repeat1_wildcard_without_exclusion():
+    trace = setup_trace(n_events=3, n_repeat=1)
+    trace.add_event(TraceEventDurationBegin('final_event', 100))
+    trace_analyzer = TraceAnalyzer(trace)
+    event_chains = trace_analyzer.match(
+        'event000+*event000-final_event+', 'event_chain', False
+    )  # The whole trace is expected to be matched
+    assert len(event_chains) == 1
+    assert event_chains[0].events == trace.events
 
 
 def test_export_merged_trace_to_tef_json():

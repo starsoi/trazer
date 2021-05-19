@@ -22,6 +22,10 @@ class _EventTypeCode(Enum):
     WILDCARD = '*'
 
 
+class _EventNameNotFoundError(Exception):
+    pass
+
+
 class TraceAnalyzer(object):
     _event_type_codes: Dict[Type, str] = {
         TraceEventDurationBegin: _EventTypeCode.BEGIN.value,
@@ -222,7 +226,7 @@ class TraceAnalyzer(object):
         exclude the same end events, i.e. C-. In other words, for event C, only C+ will be covered by the wildcard.
 
         :param event_pattern: a string for matching an event sequence
-        :param exclusive_wildcard: whether explicitly specified events should be excluded from the wildcard
+        :param exclusive_wildcard: whether explicitly specified events should be excluded from the wildcard.
         :return: the encoded event pattern
         """
         # Split the event pattern by wildcard symbol
@@ -243,7 +247,11 @@ class TraceAnalyzer(object):
         if any(
             len(m) == 0 for m in matches
         ):  # No match is found in one of the subpattern
-            raise ValueError(f'Invalid event pattern "{event_pattern}"')
+            raise ValueError(
+                f'Invalid event pattern "{event_pattern}".\n'
+                + 'Use <event_name> and one of the symbols '
+                + f'({", ".join(c.value for c in _EventTypeCode)}) to compose an event pattern.'
+            )
 
         last_match = matches[-1][-1]
         # Last event specification does not end at the last character of the event pattern
@@ -262,12 +270,15 @@ class TraceAnalyzer(object):
         #   [('D', '-')]
         # ]
         encoded_subpatterns: List[List[Tuple[str, str]]] = []
+        # Iterate through all subpatterns
         for i, m_one_subpattern in enumerate(matches):
             encoded_subpatterns.append([])
+
+            # Iterate through matched event name and event type code within one subpattern.
             for m in m_one_subpattern:
                 event_name, event_type_code = m.group(1), m.group(2)
                 if event_name not in self.event_name_codes:
-                    raise ValueError(
+                    raise _EventNameNotFoundError(
                         f'Event name "{event_name}" not found in the trace.'
                     )
                 if event_type_code not in [
@@ -310,7 +321,9 @@ class TraceAnalyzer(object):
         event_index = event_string_index // (self._n_codes_per_event_name + 1)
         return event_index, self.trace.events[event_index]
 
-    def match(self, event_pattern: str, event_chain_name: str) -> List[EventChain]:
+    def match(
+        self, event_pattern: str, event_chain_name: str, exclusive_wildcard: bool = True
+    ) -> List[EventChain]:
         """Match a specific event sequence by the given ``event_pattern``.
         A new ``EventChain`` is created for each matched event sequence and is added into the ``event_chains``
         attribute.
@@ -364,9 +377,16 @@ class TraceAnalyzer(object):
 
         :param event_pattern: A string for matching an event sequence.
         :param event_chain_name: The name of the event chain for the matched event sequence.
+        :param exclusive_wildcard: Whether explicitly specified events should be excluded from the wildcard.
         :return: A list of matched event chains.
         """
-        encoded_event_pattern = self._encode_event_pattern(event_pattern)
+        try:
+            encoded_event_pattern = self._encode_event_pattern(
+                event_pattern, exclusive_wildcard
+            )
+        except _EventNameNotFoundError:  # Break early if event name in the pattern cannot be found in the trace.
+            return []
+
         matched_event_chains: List[EventChain] = []
         for m in re.finditer(encoded_event_pattern, self.events_string):
             first_event_index, _ = self._map_string_index_to_event(m.start(1))
