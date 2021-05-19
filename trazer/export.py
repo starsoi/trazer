@@ -59,9 +59,7 @@ def to_tef(
 
     # Prepare the JSON dict
     tef_trace_events: List[Dict] = []
-    tef_dict = {'traceEvents': tef_trace_events}
-    if display_time_unit:
-        tef_dict['displayTimeUnit']: display_time_unit
+    tef_dict = {'traceEvents': tef_trace_events, 'displayTimeUnit': display_time_unit}
 
     # Collect the tef dicts of provided events
     for t_or_e in (trace_or_event, *traces_or_events):

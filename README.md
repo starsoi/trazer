@@ -54,9 +54,9 @@ focusing on event chain analysis.
 
 Next, store the string into a `.json` file and open it using the trace tool `chrome://tracing` in Chrome.
 
-### Merge Event Chains
+### Match Event Chains
 
-Different related events in an event chain can be merged and represented as a merged event in the higher hierarchical level.
+Different related events in a trace can be merged and represented as an event chain at a higher hierarchical level.
 
 An event chain is described using an event pattern. Special symbols in the notation:
 
@@ -68,7 +68,7 @@ An event chain is described using an event pattern. Special symbols in the notat
 >>> from trazer import Trace, TraceEventDurationBegin, TraceEventDurationEnd
 >>> trace = Trace()
 
-# Add an event chain: event1 begins -> event2 begins -> event2 ends -> event1 ends
+# Add an event sequence: event1 begins, event2 begins, event2 ends, event1 ends
 >>> trace.add_events([
 ... TraceEventDurationBegin('event1', 1),
 ... TraceEventDurationBegin('event2', 2),
@@ -85,16 +85,16 @@ An event chain is described using an event pattern. Special symbols in the notat
 >>> from trazer import TraceAnalyzer
 >>> trace_analyzer = TraceAnalyzer(trace)
 
-# Merge all events belonging to the event chain
->>> print(trace_analyzer.merge_events('event1+event2+event2-event1-', 'event_chain'))
-[1 ms]: event_chain (B)
-[4 ms]: event_chain (E)
+# We want to find the event chains matching the sequence:
+# event1 begins -> event2 begins -> event2 ends -> event1 ends
+>>> trace_analyzer.match('event1+event2+event2-event1-', 'event_chain')
+[[1 - 4 ms]: event_chain (4 events)]
 
-# Or use an alternative pattern employing wildcards
+# Or use an alternative pattern employing wildcards.
+# We want to find the event chains that begins with event1 and ends with event1.
 >>> trace_analyzer = TraceAnalyzer(trace)
->>> print(trace_analyzer.merge_events('event1+*-event1-', 'event_chain'))
-[1 ms]: event_chain (B)
-[4 ms]: event_chain (E)
+>>> trace_analyzer.match('event1+*-event1-', 'event_chain')
+[[1 - 4 ms]: event_chain (4 events)]
 
 ```
 
