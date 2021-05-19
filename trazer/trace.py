@@ -193,3 +193,20 @@ class EventChain(Trace):
         :return: The last event.
         """
         return self.events[-1]
+
+    def __str__(self):
+        return f'[{self.begin_event.ts} - {self.end_event.ts} ms]: {self.name} ({len(self.events)} events)'
+
+    def __repr__(self):
+        return str(self)
+
+    def as_event_pair(self):
+        """Represent the even chain as a pair of (TraceEventDurationBegin, TraceEventDurationEnd)
+        The events in the event pair have the same name as the event chain.
+        The two events has the timestamps of the begin and end events respectively.
+
+        :return: The event pair.
+        """
+        begin_event = TraceEventDurationBegin(self.name, self.begin_event.ts)
+        end_event = TraceEventDurationEnd(self.name, self.end_event.ts)
+        return begin_event, end_event
