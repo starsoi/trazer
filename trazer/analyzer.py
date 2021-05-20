@@ -401,6 +401,7 @@ class TraceAnalyzer(object):
             matched_event_chains.append(event_chain)
 
         self.event_chains.extend(matched_event_chains)
+        self.event_chains.sort(key=lambda ec: ec.ts)
         return matched_event_chains
 
     def to_tef_json(self, event_chain_pid: int) -> str:
