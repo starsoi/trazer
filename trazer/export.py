@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type, Union
+from typing import Any, Dict, IO, List, Optional, Type, Union
 from trazer import Trace
 import trazer.trace as trace
 from trazer.trace import TraceEvent
@@ -13,7 +13,7 @@ _TEF_MANDATORY_PROPS: Dict[Type[TraceEvent], Dict[str, Any]] = {
 }
 
 
-def _to_tef_event_dict(trace_event: TraceEvent) -> Dict[str, Any]:
+def to_tef_event_dict(trace_event: TraceEvent) -> Dict[str, Any]:
     """Export the attributes of a TraceEvent instance to a dict.
     All public attributes of TraceEvent are exported.
     The exported timestamp is converted to micro-seconds.
@@ -34,14 +34,14 @@ def _to_tef_event_dict(trace_event: TraceEvent) -> Dict[str, Any]:
     return tef_event_dict
 
 
-def to_tef(
+def to_tef_json(
     trace_or_event: Union[Trace, TraceEvent],
     *traces_or_events: Union[Trace, TraceEvent],
-    display_time_unit: str = 'ms'
-) -> Dict[str, Any]:
-    """Export the trace to a dict corresponding to the
-    `Trace Event Format <https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview>`_
-    JSON.
+    display_time_unit: str = 'ms',
+    file_like: Optional[IO[str]] = None
+) -> Optional[Dict[str, Any]]:
+    """Export the trace to a JSON corresponding to the
+    `Trace Event Format <https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview>`
 
     If more than one traces are provided, the trace events in different traces will be merged and exported as one JSON.
     If traces and individual trace events are provided, the trace events will be merged into the exported trace.
@@ -50,12 +50,10 @@ def to_tef(
     :param traces_or_events: More traces or trace events.
     :param display_time_unit: Specifies in which unit timestamps should be displayed.
            This supports values of "ms" or "ns". Default value is "ms".
-    :return: A JSON dict in Trace Event Format.
+    :param file_like: A file-like object for writing the JSON.
+    :return: The JSON dict in Trace Event Format or None if ``file_path`` is provided.
     """
-    if (
-        isinstance(trace_or_event, TraceEvent) and len(traces_or_events) == 0
-    ):  # Export one TraceEvent
-        return _to_tef_event_dict(trace_or_event)
+    import json
 
     # Prepare the JSON dict
     tef_trace_events: List[Dict] = []
@@ -64,10 +62,13 @@ def to_tef(
     # Collect the tef dicts of provided events
     for t_or_e in (trace_or_event, *traces_or_events):
         if isinstance(t_or_e, Trace):
-            tef_trace_events.extend(e.tef for e in t_or_e.events)
+            tef_trace_events.extend(to_tef_event_dict(e) for e in t_or_e.events)
         elif isinstance(t_or_e, TraceEvent):
-            tef_trace_events.append(_to_tef_event_dict(t_or_e))
+            tef_trace_events.append(to_tef_event_dict(t_or_e))
         else:
             raise NotImplementedError
 
-    return tef_dict
+    if file_like:
+        json.dump(tef_dict, file_like, indent=4)
+    else:
+        return tef_dict

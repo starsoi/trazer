@@ -1,5 +1,6 @@
-import json
 import pytest
+
+from tests.utils import setup_trace, setup_trace_analyzer
 from trazer import (
     Trace,
     TraceEventDurationBegin,
@@ -8,14 +9,13 @@ from trazer import (
 )
 from trazer import TraceAnalyzer
 from trazer.analyzer import _EventNameNotFoundError
-from tests.utils import setup_trace, setup_trace_analyzer
 
 
 def test_analyzer_with_empty_trace():
     trace = Trace()
     trace_analyzer = TraceAnalyzer(trace)
     assert trace_analyzer.match('test+', 'test') == []
-    assert json.loads(trace_analyzer.to_tef_json(100)) == {
+    assert trace_analyzer.to_tef_json(100) == {
         'traceEvents': [],
         'displayTimeUnit': 'ms',
     }
@@ -181,10 +181,20 @@ def test_export_merged_trace_to_tef_json():
     trace_analyzer.match('event000+*event000-', 'merged_event')
     exported_tef_json = trace_analyzer.to_tef_json(1000)
 
-    expected_trace = trace_analyzer.trace
+    expected_trace = setup_trace(n_repeat=1)
     expected_trace.add_event(TraceEventDurationBegin('merged_event', 0, pid=1000))
     expected_trace.add_event(TraceEventDurationEnd('merged_event', 5, pid=1000))
     expected_trace.add_event(TraceEventDurationBegin('merged_event', 6, pid=1000))
     expected_trace.add_event(TraceEventDurationEnd('merged_event', 11, pid=1000))
 
-    assert exported_tef_json == expected_trace.tef_json
+    assert expected_trace.to_tef_json() == exported_tef_json
+
+    # Export to file
+    import json
+    import tempfile
+
+    tmp = tempfile.TemporaryFile('w+t')
+    trace_analyzer.to_tef_json(1000, tmp)
+    tmp.seek(0)
+    assert expected_trace.to_tef_json() == json.load(tmp)
+    tmp.close()

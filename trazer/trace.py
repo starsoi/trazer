@@ -1,8 +1,7 @@
 from __future__ import annotations
 from functools import wraps
-from typing import List, Iterable
+from typing import IO, List, Iterable, Optional
 from abc import ABC
-import json
 
 
 class Trace(object):
@@ -34,24 +33,16 @@ class Trace(object):
         for event in events:
             self.add_event(event)
 
-    @property
-    def tef(self):
-        """Get a dict containing the properties required for the Trace Event Format.
+    def to_tef_json(self, file_like: Optional[IO[str]] = None) -> Optional[str]:
+        """Get the JSON in Trace Event Format
+        The string can be written into a JSON file for the visualization in Chrome ```chrome://tracing```.
 
-        :return: A dict with properties from Trace Event Format
+        :param file_like: A file-like object for writing the JSON.
+        :return: The JSON string or None if ``file_path`` is provided.
         """
         import trazer.export as export
 
-        return export.to_tef(self)
-
-    @property
-    def tef_json(self):
-        """Get the JSON string of ``Trace.tef``.
-        The string can be written into a JSON file for the visualization in Chrome ```chrome://tracing```.
-
-        :return: The JSON string.
-        """
-        return json.dumps(self.tef, indent=4)
+        return export.to_tef_json(self, file_like=file_like)
 
     def __str__(self):
         """Get the string representation of a trace.
@@ -86,7 +77,7 @@ class TraceEvent(ABC):
         """
         import trazer.export as export
 
-        return export.to_tef(self)
+        return export.to_tef_event_dict(self)
 
     def __str__(self):
         """Get the string representation of this event.

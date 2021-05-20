@@ -109,6 +109,7 @@ def test_custom_attributes():
 
 def test_json_export():
     import json
+    import tempfile
 
     trace = Trace()
     event1_begin = TraceEventDurationBegin('event1', 0.001)
@@ -119,7 +120,10 @@ def test_json_export():
     trace.add_event(event1_end)
     trace.add_event(event2)
 
-    readback = json.loads(trace.tef_json)
+    with tempfile.TemporaryFile('w+t') as tmp:
+        trace.to_tef_json(tmp)
+        tmp.seek(0)
+        readback = json.load(tmp)
     assert readback['traceEvents'][0] == event1_begin.tef
     assert readback['traceEvents'][1] == event1_end.tef
     assert readback['traceEvents'][2] == event2.tef
