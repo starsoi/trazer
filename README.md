@@ -4,7 +4,7 @@
 ![Doctest](https://github.com/starsoi/trazer/actions/workflows/doctest.yml/badge.svg)
 [![Coverage](https://codecov.io/gh/starsoi/trazer/branch/master/graph/badge.svg?token=HVX3PFO8RF)](https://codecov.io/gh/starsoi/trazer)
 
-A general trace analysis framework (**tra**ce analy**zer**) for execution and network traces, 
+A lightweight trace analysis framework (**tra**ce analy**zer**) for execution and network traces, 
 focusing on event chain analysis.
 
 
@@ -55,13 +55,14 @@ focusing on event chain analysis.
 
 ```
 
-Next, store the string into a `.json` file and open it using the trace tool `chrome://tracing` in Chrome.
+Next, store the string into a `.json` file and open it using the trace tool `chrome://tracing` in Chrome
+or [Perfetto](https://ui.perfetto.dev).
 
 ### Match Event Chains
 
 Different related events in a trace can be merged and represented as an event chain at a higher hierarchical level.
 
-An event chain is described using an event pattern. Special symbols in the notation:
+An event chain is described using an event pattern, where the following symbols have special interpretation:
 
 * `+` following an event name: the event begins.
 * `-` following an event name: the event ends.
@@ -101,11 +102,11 @@ An event chain is described using an event pattern. Special symbols in the notat
 
 ```
 
-### Export Trace with Merged Events
+### Export Trace with Event Chains
 
-The merged events can be visualized together with the original trace in the same view.
-For visualization in `chrome://tracing`, a dedicated process ID needs to be assigned to
-the merged events, such that they will be displayed separately from the original trace.
+The event chains can be visualized together with the original trace in the same view.
+For visualization in `chrome://tracing` or [Perfetto](https://ui.perfetto.dev), a dedicated process ID needs to be assigned to
+the event chains, such that they will be displayed separately from the original trace.
 
 ```python
 trace_analyzer.to_tef_json(5555)  # Process ID = 5555
