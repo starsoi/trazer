@@ -41,6 +41,8 @@ class TraceAnalyzer(object):
         """
         self.trace = trace  # Original trace to be analyzed
         self.event_chains: List[EventChain] = []
+        # Map the tuple (begin event, end event) to the corresponding event chain
+        self._event_chain_index: Dict[Tuple[TraceEvent, TraceEvent], EventChain] = {}
         self._n_codes_per_event_name = 0
         self.event_name_codes: Dict[str, str] = self._create_event_name_codes()
         self.events_string: str = self._create_events_string()
@@ -375,6 +377,10 @@ class TraceAnalyzer(object):
         >>> responses[0]
         [4 - 8 ms]: response_event_chain (5 events)
 
+        >>> print('\\n'.join(map(str, trace_analyzer.event_chains)))
+        [1 - 3 ms]: request_event_chain (3 events)
+        [4 - 8 ms]: response_event_chain (5 events)
+
         :param event_pattern: A string for matching an event sequence.
         :param event_chain_name: The name of the event chain for the matched event sequence.
         :param exclusive_wildcard: Whether explicitly specified events should be excluded from the wildcard.
@@ -387,20 +393,33 @@ class TraceAnalyzer(object):
         except _EventNameNotFoundError:  # Break early if event name in the pattern cannot be found in the trace.
             return []
 
-        matched_event_chains: List[EventChain] = []
+        matched_event_chains: List[EventChain] = []  # New and updated event chains.
         for m in re.finditer(encoded_event_pattern, self.events_string):
             first_event_index, _ = self._map_string_index_to_event(m.start(1))
             last_event_index, _ = self._map_string_index_to_event(
                 m.start(len(m.groups()))
             )
 
-            event_chain = EventChain(event_chain_name)
-            event_chain.add_events(
-                self.trace.events[first_event_index : last_event_index + 1]
-            )
+            begin_event = self.trace.events[first_event_index]
+            end_event = self.trace.events[last_event_index]
+            if (
+                begin_event,
+                end_event,
+            ) in self._event_chain_index:  # The same event chain has been matched.
+                event_chain = self._event_chain_index[(begin_event, end_event)]
+                # Update the name of the once matched event chain (a new name might be provided)
+                # No new EventChain instance needs to be created.
+                event_chain.name = event_chain_name
+            else:  # This is a new event chain never matched.
+                event_chain = EventChain(event_chain_name)
+                event_chain.add_events(
+                    self.trace.events[first_event_index : last_event_index + 1]
+                )
+                self._event_chain_index[(begin_event, end_event)] = event_chain
+                self.event_chains.append(event_chain)
+
             matched_event_chains.append(event_chain)
 
-        self.event_chains.extend(matched_event_chains)
         self.event_chains.sort(key=lambda ec: ec.ts)
         return matched_event_chains
 

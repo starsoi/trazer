@@ -176,6 +176,48 @@ def test_match_events_repeat1_wildcard_without_exclusion():
     assert event_chains[0].events == trace.events
 
 
+def test_match_same_pattern_multiple_times():
+    trace_analyzer = setup_trace_analyzer()
+    trace_analyzer.match('event000+*event000-', 'merged_event')
+    trace_analyzer.match('event000+*event000-', 'merged_event')
+    trace_analyzer.match('event000+*event000-', 'merged_event_new')
+
+    assert len(trace_analyzer.event_chains) == 1
+    assert trace_analyzer.event_chains[0].name == 'merged_event_new'
+    assert trace_analyzer.event_chains[0].begin_event == trace_analyzer.trace.events[0]
+    assert trace_analyzer.event_chains[0].end_event == trace_analyzer.trace.events[-1]
+
+
+def test_match_multiple_event_patterns():
+    trace_analyzer = setup_trace_analyzer(n_repeat=1)
+    trace_events = trace_analyzer.trace.events
+
+    match_result1 = trace_analyzer.match('event000+*event000-', 'merged_event1')
+    assert len(match_result1) == 2
+    assert match_result1[0].events == trace_events[0:6]
+    assert match_result1[1].events == trace_events[6:12]
+
+    match_result2 = trace_analyzer.match('event001+*event001-', 'merged_event2')
+    assert len(match_result2) == 2
+    assert match_result2[0].events == trace_events[1:5]
+    assert match_result2[1].events == trace_events[7:11]
+
+    match_result3 = trace_analyzer.match('event000+*event000-', 'merged_event1_new')
+    assert len(match_result3) == 2
+    assert match_result3[0].name == 'merged_event1_new'
+    assert match_result3[0].events == trace_events[0:6]
+    assert match_result3[1].name == 'merged_event1_new'
+    assert match_result3[1].events == trace_events[6:12]
+
+    assert len(trace_analyzer.event_chains) == 4
+    assert trace_analyzer.event_chains[0].name == 'merged_event1_new'
+    assert trace_analyzer.event_chains[0].events == trace_events[0:6]
+    assert trace_analyzer.event_chains[1].name == 'merged_event2'
+    assert trace_analyzer.event_chains[2].name == 'merged_event1_new'
+    assert trace_analyzer.event_chains[2].events == trace_events[6:12]
+    assert trace_analyzer.event_chains[3].name == 'merged_event2'
+
+
 def test_export_merged_trace_to_tef_json():
     trace_analyzer = setup_trace_analyzer(n_repeat=1)
     trace_analyzer.match('event000+*event000-', 'merged_event')
