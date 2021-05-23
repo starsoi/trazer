@@ -27,7 +27,10 @@ focusing on event chain analysis.
 
 ### Export Trace to Chrome Tracing JSON
 ```python
->>> print(trace.tef_json)  # Exported timestamps are in microsecond  
+>>> from io import StringIO
+>>> s = StringIO()
+>>> trace.to_tef_json(file_like=s)  # Exported timestamps are in microsecond
+>>> print(s.getvalue())
 {
     "traceEvents": [
         {
