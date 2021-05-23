@@ -1,37 +1,11 @@
-trazer package
-==============
 
-Submodules
-----------
 
-trazer.analyzer module
-----------------------
+References
+==========
 
-.. automodule:: trazer.analyzer
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 4
 
-trazer.export module
---------------------
-
-.. automodule:: trazer.export
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-trazer.trace module
--------------------
-
-.. automodule:: trazer.trace
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: trazer
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   trazer.analyzer
+   trazer.export
+   trazer.trace
