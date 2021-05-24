@@ -7,7 +7,7 @@ setuptools.setup(
     name="trazer",
     author="Hongyan Zhang",
     author_email="starsoi@gmail.com",
-    description="A generic trace analysis framework.",
+    description="A lightweight trace analysis framework.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/starsoi/trazer",

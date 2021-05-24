@@ -3,6 +3,8 @@
 ![Test](https://github.com/starsoi/trazer/actions/workflows/main.yml/badge.svg)
 ![Doctest](https://github.com/starsoi/trazer/actions/workflows/doctest.yml/badge.svg)
 [![Coverage](https://codecov.io/gh/starsoi/trazer/branch/master/graph/badge.svg?token=HVX3PFO8RF)](https://codecov.io/gh/starsoi/trazer)
+[![PyPI version](https://badge.fury.io/py/trazer.svg)](https://pypi.org/project/trazer)
+[![Documentation Status](https://readthedocs.org/projects/trazer/badge/?version=latest)](https://trazer.readthedocs.io/en/latest/?badge=latest)
 
 A lightweight trace analysis framework (**tra**ce analy**zer**) for execution and network traces, 
 focusing on event chain analysis.
@@ -61,8 +63,8 @@ pip install trazer
 
 ```
 
-Next, store the string into a `.json` file and open it using the trace tool `chrome://tracing` in Chrome
-or [Perfetto](https://ui.perfetto.dev).
+The exported `.json` file can be opened in the trace visualization tools `chrome://tracing` in Chrome
+and [Perfetto](https://ui.perfetto.dev).
 
 ### Match Event Chains
 
