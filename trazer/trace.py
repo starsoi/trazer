@@ -1,6 +1,6 @@
 from __future__ import annotations
 from functools import wraps
-from typing import IO, List, Iterable, Optional
+from typing import Any, Dict, IO, List, Iterable, Optional
 from abc import ABC
 
 
@@ -33,12 +33,14 @@ class Trace(object):
         for event in events:
             self.add_event(event)
 
-    def to_tef_json(self, file_like: Optional[IO[str]] = None) -> Optional[str]:
+    def to_tef_json(
+        self, file_like: Optional[IO[str]] = None
+    ) -> Optional[Dict[str, Any]]:
         """Get the JSON in Trace Event Format
         The string can be written into a JSON file for the visualization in Chrome ```chrome://tracing```.
 
         :param file_like: A file-like object for writing the JSON.
-        :return: The JSON string or None if ``file_path`` is provided.
+        :return: The JSON dict or None if ``file_path`` is provided.
         """
         import trazer.export as export
 

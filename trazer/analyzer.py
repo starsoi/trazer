@@ -2,7 +2,7 @@ from collections import defaultdict
 from enum import Enum
 import math
 import re
-from typing import Dict, IO, List, Optional, Type, Tuple
+from typing import Any, Dict, IO, List, Optional, Type, Tuple
 from trazer.trace import (
     Trace,
     TraceEventDurationBegin,
@@ -423,7 +423,7 @@ class TraceAnalyzer(object):
 
     def to_tef_json(
         self, event_chain_pid: int, file_like: Optional[IO[str]] = None
-    ) -> Optional[str]:
+    ) -> Optional[Dict[str, Any]]:
         """Merge the event chains with the original trace so that they can be visualized in the same view.
         Each of the event chain is represented as a pair of begin and end events.
         Export the merged trace in Trace Event Format JSON.
@@ -432,7 +432,7 @@ class TraceAnalyzer(object):
 
         :param event_chain_pid: Process ID for the event chains.
         :param file_like: A file-like object for writing the JSON.
-        :return: The JSON string or None if ``file_path`` is provided.
+        :return: The JSON dict or None if ``file_path`` is provided.
         """
         from copy import copy
         import trazer.export as export
