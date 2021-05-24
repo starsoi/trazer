@@ -402,10 +402,8 @@ class TraceAnalyzer(object):
 
             begin_event = self.trace.events[first_event_index]
             end_event = self.trace.events[last_event_index]
-            if (
-                begin_event,
-                end_event,
-            ) in self._event_chain_index:  # The same event chain has been matched.
+            if (begin_event, end_event) in self._event_chain_index:
+                # The same event chain has been matched.
                 event_chain = self._event_chain_index[(begin_event, end_event)]
                 # Update the name of the once matched event chain (a new name might be provided)
                 # No new EventChain instance needs to be created.
