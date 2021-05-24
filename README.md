@@ -14,6 +14,12 @@ focusing on event chain analysis.
 
 * Python >= 3.8
 
+### Installation
+
+```bash
+pip install trazer
+```
+
 ## Usage
 
 ### Create Trace and Add Events
@@ -116,12 +122,12 @@ trace_analyzer.to_tef_json(5555)  # Process ID = 5555
 
 1. Install development dependencies
 ```bash
-pip3 install -r requirements-dev.txt
+pip install -r requirements-dev.txt
 ```
 
 2. Install runtime dependencies
 ```bash
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 3. Setup pre-commit hook (formatting with black and linting with flake8)
