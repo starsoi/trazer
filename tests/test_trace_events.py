@@ -6,6 +6,7 @@ from trazer import (
     TraceEventInstant,
 )
 from trazer.trace import TraceEvent
+from trazer.export import to_tef_event_dict
 
 
 def test_trace_event_base_tef():
@@ -127,3 +128,11 @@ def test_json_export():
     assert readback['traceEvents'][0] == event1_begin.tef
     assert readback['traceEvents'][1] == event1_end.tef
     assert readback['traceEvents'][2] == event2.tef
+
+
+def test_time_unit_conversion():
+    event = TraceEventDurationEnd('event1', 1)
+    assert to_tef_event_dict(event)['ts'] == 1000
+    assert to_tef_event_dict(event, 'ms')['ts'] == 1e3
+    assert to_tef_event_dict(event, 'us')['ts'] == 1e6
+    assert to_tef_event_dict(event, 'ns')['ts'] == 1e9

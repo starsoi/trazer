@@ -13,12 +13,14 @@ _TEF_MANDATORY_PROPS: Dict[Type[TraceEvent], Dict[str, Any]] = {
 }
 
 
-def to_tef_event_dict(trace_event: TraceEvent) -> Dict[str, Any]:
+def to_tef_event_dict(trace_event: TraceEvent, time_unit: str = 'ms') -> Dict[str, Any]:
     """Export the attributes of a TraceEvent instance to a dict.
     All public attributes of TraceEvent are exported.
     The exported timestamp is converted to micro-seconds.
 
     :param trace_event: Trace event to be exported.
+    :param time_unit: Time unit for the unit conversion of timestamps.
+           The unit of timestamp for ``TraceEvent`` is in second.
     :return: A dict containing the attributes of the provided trace events.
     """
     tef_event_dict = {
@@ -30,7 +32,12 @@ def to_tef_event_dict(trace_event: TraceEvent) -> Dict[str, Any]:
         }.items()
         if not k.startswith('_') and k != 'tef'
     }
-    tef_event_dict['ts'] *= 1e3  # timestamp in tef is in micro-seconds
+    if time_unit == 'ms':
+        tef_event_dict['ts'] *= 1e3
+    elif time_unit == 'us':
+        tef_event_dict['ts'] *= 1e6
+    elif time_unit == 'ns':
+        tef_event_dict['ts'] *= 1e9
     return tef_event_dict
 
 
@@ -49,7 +56,7 @@ def to_tef_json(
     :param trace_or_event: A complete trace or an individual trace event to be exported.
     :param traces_or_events: More traces or trace events.
     :param display_time_unit: Specifies in which unit timestamps should be displayed.
-           This supports values of "ms" or "ns". Default value is "ms".
+           This supports values of "ms", "us" or "ns". Default value is "ms".
     :param file_like: A file-like object for writing the JSON.
     :return: The JSON dict in Trace Event Format or None if ``file_path`` is provided.
     """
@@ -62,9 +69,11 @@ def to_tef_json(
     # Collect the tef dicts of provided events
     for t_or_e in (trace_or_event, *traces_or_events):
         if isinstance(t_or_e, Trace):
-            tef_trace_events.extend(to_tef_event_dict(e) for e in t_or_e.events)
+            tef_trace_events.extend(
+                to_tef_event_dict(e, display_time_unit) for e in t_or_e.events
+            )
         elif isinstance(t_or_e, TraceEvent):
-            tef_trace_events.append(to_tef_event_dict(t_or_e))
+            tef_trace_events.append(to_tef_event_dict(t_or_e, display_time_unit))
         else:
             raise NotImplementedError
 

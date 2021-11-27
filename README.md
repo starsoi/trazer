@@ -28,8 +28,8 @@ pip install trazer
 ```python
 >>> from trazer import Trace, TraceEventDurationBegin, TraceEventDurationEnd
 >>> trace = Trace()
->>> trace.add_event(TraceEventDurationBegin('my_event', 1.0))  # my_event begins at 1.0 ms
->>> trace.add_event(TraceEventDurationEnd('my_event', 2.0))  # my_event ends at 2.0 ms
+>>> trace.add_event(TraceEventDurationBegin('my_event', 1.0))  # my_event begins at 1.0 s
+>>> trace.add_event(TraceEventDurationEnd('my_event', 2.0))  # my_event ends at 2.0 s
 
 ```
 
@@ -37,7 +37,7 @@ pip install trazer
 ```python
 >>> from io import StringIO
 >>> s = StringIO()
->>> trace.to_tef_json(file_like=s)  # Exported timestamps are in microsecond
+>>> trace.to_tef_json(file_like=s)  # Exported timestamps are in milliseconds by default
 >>> print(s.getvalue())
 {
     "traceEvents": [

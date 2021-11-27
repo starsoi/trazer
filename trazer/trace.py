@@ -60,7 +60,7 @@ class TraceEvent(ABC):
         """Initialize a trace event.
 
         :param name: Name of the event. It shall be unique in the trace.
-        :param ts: Timestamp of the event in milliseconds.
+        :param ts: Timestamp of the event in seconds.
         :param pid: Process ID of the event (for execution trace).
         :param tid: Thread ID of the event (for execution trace).
         :param kwargs: Other attributes to be associated with the event.
