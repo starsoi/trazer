@@ -120,6 +120,8 @@ def test_json_export():
     trace.add_event(event1_end)
     trace.add_event(event2)
 
+    trace.set_thread_name(0, 0, 'test thread')
+
     with tempfile.TemporaryFile('w+t') as tmp:
         trace.to_tef_json(tmp)
         tmp.seek(0)
@@ -127,3 +129,36 @@ def test_json_export():
     assert readback['traceEvents'][0] == event1_begin.tef
     assert readback['traceEvents'][1] == event1_end.tef
     assert readback['traceEvents'][2] == event2.tef
+    assert readback['traceEvents'][3] == trace.metadata_events[0].tef
+
+
+def test_set_process_name():
+    trace = Trace()
+    event1_begin = TraceEventDurationBegin('event1', 0.001, pid=100, tid=0)
+    event1_end = TraceEventDurationEnd('event1', 0.005, pid=100, tid=0)
+    event2_begin = TraceEventDurationBegin('event2', 0.002, pid=200, tid=100)
+    event2_end = TraceEventDurationEnd('event2', 0.004, pid=200, tid=100)
+    trace.add_events((event1_begin, event1_end, event2_begin, event2_end))
+    trace.set_process_name(100, 'process1')
+    trace.set_process_name(200, 'process2')
+    trace.set_thread_name(100, 0, 'process1_thread')
+    trace.set_thread_name(200, 100, 'process2_thread')
+
+    metadata_events = trace.metadata_events
+    assert len(metadata_events) == 4
+    for event in metadata_events:
+        assert event.name in ['process_name', 'thread_name']
+        if event.name == 'process_name':
+            assert event.pid in [100, 200]
+            if event.pid == 100:
+                assert event.args == {'name': 'process1'}
+            if event.pid == 200:
+                assert event.args == {'name': 'process2'}
+        if event.name == 'thread_name':
+            assert (event.pid, event.tid) in [(100, 0), (200, 100)]
+            if (event.pid, event.tid) == (100, 0):
+                assert event.args == {'name': 'process1_thread'}
+            if (event.pid, event.tid) == (200, 100):
+                assert event.args == {'name': 'process2_thread'}
+
+    trace.to_tef_json(open('test.json', 'w'))

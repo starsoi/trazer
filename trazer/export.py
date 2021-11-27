@@ -10,6 +10,7 @@ _TEF_MANDATORY_PROPS: Dict[Type[TraceEvent], Dict[str, Any]] = {
     trace.TraceEventDurationEnd: {'ph': 'E'},
     trace.TraceEventCounter: {'ph': 'C'},
     trace.TraceEventInstant: {'ph': 'i', 's': 'g'},
+    trace.TraceEventMetadata: {'ph': 'M'},
 }
 
 
@@ -62,7 +63,9 @@ def to_tef_json(
     # Collect the tef dicts of provided events
     for t_or_e in (trace_or_event, *traces_or_events):
         if isinstance(t_or_e, Trace):
-            tef_trace_events.extend(to_tef_event_dict(e) for e in t_or_e.events)
+            tef_trace_events.extend(
+                to_tef_event_dict(e) for e in t_or_e.events + t_or_e.metadata_events
+            )
         elif isinstance(t_or_e, TraceEvent):
             tef_trace_events.append(to_tef_event_dict(t_or_e))
         else:
