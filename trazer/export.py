@@ -10,6 +10,7 @@ _TEF_MANDATORY_PROPS: Dict[Type[TraceEvent], Dict[str, Any]] = {
     trace.TraceEventDurationEnd: {'ph': 'E'},
     trace.TraceEventCounter: {'ph': 'C'},
     trace.TraceEventInstant: {'ph': 'i', 's': 'g'},
+    trace.TraceEventMetadata: {'ph': 'M'},
 }
 
 
@@ -56,7 +57,7 @@ def to_tef_json(
     :param trace_or_event: A complete trace or an individual trace event to be exported.
     :param traces_or_events: More traces or trace events.
     :param display_time_unit: Specifies in which unit timestamps should be displayed.
-           This supports values of "ms", "us" or "ns". Default value is "ms".
+           This supports values of "ms" or "ns". Default value is "ms".
     :param file_like: A file-like object for writing the JSON.
     :return: The JSON dict in Trace Event Format or None if ``file_path`` is provided.
     """
@@ -70,7 +71,8 @@ def to_tef_json(
     for t_or_e in (trace_or_event, *traces_or_events):
         if isinstance(t_or_e, Trace):
             tef_trace_events.extend(
-                to_tef_event_dict(e, display_time_unit) for e in t_or_e.events
+                to_tef_event_dict(e, display_time_unit)
+                for e in t_or_e.events + t_or_e.metadata_events
             )
         elif isinstance(t_or_e, TraceEvent):
             tef_trace_events.append(to_tef_event_dict(t_or_e, display_time_unit))

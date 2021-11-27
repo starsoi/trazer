@@ -1,6 +1,6 @@
 from __future__ import annotations
 from functools import wraps
-from typing import Any, Dict, IO, List, Iterable, Optional
+from typing import Any, Dict, IO, List, Iterable, Tuple, Optional
 from abc import ABC
 
 
@@ -13,8 +13,12 @@ class Trace(object):
         """Initialize a ``Trace`` instance with the following properties:
 
         * ``events``: A list of trace events, which has the insertion order of the contained trace events.
+        * ``process_name``: Mapping from process id to process name
+        * ``thread_name``: Mapping from the pair of (process id, thread id) to thread name
         """
         self.events: List[TraceEvent] = []
+        self.process_names: Dict[int, str] = {}
+        self.thread_names: Dict[Tuple[int, int], str] = {}
 
     def add_event(self, event: TraceEvent):
         """Add a trace event into the trace.
@@ -32,6 +36,42 @@ class Trace(object):
         """
         for event in events:
             self.add_event(event)
+
+    def set_process_name(self, pid: int, name: str):
+        """Set the process name for the process identified by `pid`.
+
+        :param pid: Process id.
+        :param name: Process name.
+        :return: None
+        """
+        self.process_names[pid] = name
+
+    def set_thread_name(self, pid: int, tid: int, name: str):
+        """Set the thread name for the thread identified by `pid` and `tid`.
+
+        :param pid: Process id.
+        :param tid: Thread id.
+        :param name: Thread name.
+        :return: None
+        """
+        self.thread_names[(pid, tid)] = name
+
+    @property
+    def metadata_events(self) -> List[TraceEventMetadata]:
+        """Get a list of metadata events for the trace.
+        It contains the metadata events for process and thread names.
+
+        :return: A list of `TraceEventMetadata`.
+        """
+        p_metadata = [
+            TraceEventMetadata('process_name', 0, pid=pid, name=p_name)
+            for pid, p_name in self.process_names.items()
+        ]
+        t_metadata = [
+            TraceEventMetadata('thread_name', 0, pid=pid, tid=tid, name=t_name)
+            for (pid, tid), t_name in self.thread_names.items()
+        ]
+        return p_metadata + t_metadata
 
     def to_tef_json(
         self, file_like: Optional[IO[str]] = None
@@ -56,16 +96,18 @@ class Trace(object):
 class TraceEvent(ABC):
     """An abstract class containing the basic properties for a trace event."""
 
-    def __init__(self, name: str, ts: float, pid: int = 0, tid: int = 0, **kwargs):
+    def __init__(
+        self, event_name: str, ts: float, pid: int = 0, tid: int = 0, **kwargs
+    ):
         """Initialize a trace event.
 
-        :param name: Name of the event. It shall be unique in the trace.
+        :param event_name: Name of the event. It shall be unique in the trace.
         :param ts: Timestamp of the event in seconds.
         :param pid: Process ID of the event (for execution trace).
         :param tid: Thread ID of the event (for execution trace).
         :param kwargs: Other attributes to be associated with the event.
         """
-        self.name = name
+        self.name = event_name
         self.ts = ts
         self.pid = pid
         self.tid = tid
@@ -125,6 +167,19 @@ class TraceEventInstant(TraceEvent):
     """A ``TraceEvent`` representing an instantaneous event without any duration."""
 
     _shortname = 'I'
+
+
+class TraceEventMetadata(TraceEvent):
+    """A ``TraceEvent`` representing a metadata event for associating extra information with the events in the trace."""
+
+    _shortname = 'M'
+
+    def __init__(self, metadata_name: str, ts: float, pid, tid: int = 0, **kwargs):
+        super().__init__(metadata_name, ts, pid=pid, tid=tid, **kwargs)
+        if metadata_name == 'process_name':
+            # process_name metadata should only contain pid.
+            # If it also contains tid, it will conflict with thread_name metadata with the same pid and tid.
+            del self.tid
 
 
 def _validate_property_access(func):
