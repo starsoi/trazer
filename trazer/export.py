@@ -17,11 +17,11 @@ _TEF_MANDATORY_PROPS: Dict[Type[TraceEvent], Dict[str, Any]] = {
 def to_tef_event_dict(trace_event: TraceEvent, time_unit: str = 'ms') -> Dict[str, Any]:
     """Export the attributes of a TraceEvent instance to a dict.
     All public attributes of TraceEvent are exported.
-    The exported timestamp is converted to micro-seconds.
+    The exported timestamp is converted to the unit specified by ``time_unit``.
 
     :param trace_event: Trace event to be exported.
-    :param time_unit: Time unit for the unit conversion of timestamps.
-           The unit of timestamp for ``TraceEvent`` is in second.
+    :param time_unit: Time unit of the exported timestamps.
+           The unit of timestamp for a ``TraceEvent`` is in second.
     :return: A dict containing the attributes of the provided trace events.
     """
     tef_event_dict = {
@@ -49,7 +49,7 @@ def to_tef_json(
     file_like: Optional[IO[str]] = None
 ) -> Optional[Dict[str, Any]]:
     """Export the trace to a JSON corresponding to the
-    `Trace Event Format <https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview>`
+    `Trace Event Format <https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview>`_
 
     If more than one traces are provided, the trace events in different traces will be merged and exported as one JSON.
     If traces and individual trace events are provided, the trace events will be merged into the exported trace.
