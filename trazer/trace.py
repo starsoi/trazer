@@ -46,7 +46,7 @@ class Trace(object):
 
         return export.to_tef_json(self, file_like=file_like)
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         """Get the string representation of a trace.
         :return: The string representation of each events per line.
         """
@@ -81,7 +81,7 @@ class TraceEvent(ABC):
 
         return export.to_tef_event_dict(self)
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         """Get the string representation of this event.
         It has a format: ``[<timestamp>]: <name of the event> (shortname of the event)``
 
@@ -89,7 +89,7 @@ class TraceEvent(ABC):
         """
         return f'[{self.ts} ms]: {self.name} ({self._shortname})'
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return str(self)
 
 
@@ -187,10 +187,10 @@ class EventChain(Trace):
         """
         return self.events[-1]
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         return f'[{self.begin_event.ts} - {self.end_event.ts} ms]: {self.name} ({len(self.events)} events)'
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return str(self)
 
     def as_event_pair(self):
