@@ -97,7 +97,12 @@ class TraceEvent(ABC):
     """An abstract class containing the basic properties for a trace event."""
 
     def __init__(
-        self, event_name: str, ts: float, pid: int = 0, tid: int = 0, **kwargs
+        self,
+        event_name: str,
+        ts: float,
+        pid: Optional[int] = None,
+        tid: Optional[int] = None,
+        **kwargs,
     ):
         """Initialize a trace event.
 
@@ -109,8 +114,10 @@ class TraceEvent(ABC):
         """
         self.name = event_name
         self.ts = ts
-        self.pid = pid
-        self.tid = tid
+        if pid is not None:
+            self.pid = pid
+        if tid is not None:
+            self.tid = tid
         self.args = kwargs
 
     @property
@@ -173,13 +180,6 @@ class TraceEventMetadata(TraceEvent):
     """A ``TraceEvent`` representing a metadata event for associating extra information with the events in the trace."""
 
     _shortname = 'M'
-
-    def __init__(self, metadata_name: str, ts: float, pid, tid: int = 0, **kwargs):
-        super().__init__(metadata_name, ts, pid=pid, tid=tid, **kwargs)
-        if metadata_name == 'process_name':
-            # process_name metadata should only contain pid.
-            # If it also contains tid, it will conflict with thread_name metadata with the same pid and tid.
-            del self.tid
 
 
 def _validate_property_access(func):
