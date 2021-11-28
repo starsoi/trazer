@@ -6,15 +6,14 @@
 [![PyPI version](https://badge.fury.io/py/trazer.svg)](https://pypi.org/project/trazer)
 [![Documentation Status](https://readthedocs.org/projects/trazer/badge/?version=latest)](https://trazer.readthedocs.io/en/latest/?badge=latest)
 
-A lightweight trace analysis framework (**tra**ce analy**zer**) for execution and network traces, 
+A lightweight trace analysis framework (**tra**ce analy**zer**) for execution and network traces,
 focusing on event chain analysis.
-
 
 ## Getting Started
 
 ### Prerequisites
 
-* Python >= 3.8
+- Python >= 3.8
 
 ### Installation
 
@@ -25,15 +24,17 @@ pip install trazer
 ## Usage
 
 ### Create Trace and Add Events
+
 ```python
 >>> from trazer import Trace, TraceEventDurationBegin, TraceEventDurationEnd
 >>> trace = Trace()
->>> trace.add_event(TraceEventDurationBegin('my_event', 1.0))  # my_event begins at 1.0 s
->>> trace.add_event(TraceEventDurationEnd('my_event', 2.0))  # my_event ends at 2.0 s
+>>> trace.add_event(TraceEventDurationBegin('my_event', 1.0, pid=0, tid=0))  # my_event begins at 1.0 s
+>>> trace.add_event(TraceEventDurationEnd('my_event', 2.0, pid=0, tid=0))  # my_event ends at 2.0 s
 
 ```
 
 ### Export Trace to Chrome Tracing JSON
+
 ```python
 >>> from io import StringIO
 >>> s = StringIO()
@@ -72,9 +73,9 @@ Different related events in a trace can be merged and represented as an event ch
 
 An event chain is described using an event pattern, where the following symbols have special interpretation:
 
-* `+` following an event name: the event begins.
-* `-` following an event name: the event ends.
-* `*`: arbitrary events, excluding repetitions.
+- `+` following an event name: the event begins.
+- `-` following an event name: the event ends.
+- `*`: arbitrary events, excluding repetitions.
 
 ```python
 >>> from trazer import Trace, TraceEventDurationBegin, TraceEventDurationEnd
@@ -123,16 +124,19 @@ trace_analyzer.to_tef_json(5555)  # Process ID = 5555
 ## Contributing
 
 1. Install development dependencies
+
 ```bash
 pip install -r requirements-dev.txt
 ```
 
 2. Install runtime dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 3. Setup pre-commit hook (formatting with black and linting with flake8)
+
 ```bash
 pre-commit install
 ```
