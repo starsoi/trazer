@@ -66,11 +66,11 @@ class Trace(object):
         :return: A list of `TraceEventMetadata`.
         """
         p_metadata = [
-            TraceEventMetadata('process_name', 0, pid=pid, name=p_name)
+            TraceEventMetadata('process_name', pid=pid, name=p_name)
             for pid, p_name in self.process_names.items()
         ]
         t_metadata = [
-            TraceEventMetadata('thread_name', 0, pid=pid, tid=tid, name=t_name)
+            TraceEventMetadata('thread_name', pid=pid, tid=tid, name=t_name)
             for (pid, tid), t_name in self.thread_names.items()
         ]
         return p_metadata + t_metadata
@@ -131,7 +131,7 @@ class TraceEvent(ABC):
     def __init__(
         self,
         event_name: str,
-        ts: float,
+        ts: Optional[float] = None,
         pid: Optional[int] = None,
         tid: Optional[int] = None,
         **kwargs,
@@ -145,7 +145,8 @@ class TraceEvent(ABC):
         :param kwargs: Other attributes to be associated with the event.
         """
         self.name = event_name
-        self.ts = ts
+        if ts is not None:
+            self.ts = ts
         if pid is not None:
             self.pid = pid
         if tid is not None:
@@ -212,6 +213,16 @@ class TraceEventMetadata(TraceEvent):
     """A ``TraceEvent`` representing a metadata event for associating extra information with the events in the trace."""
 
     _shortname = 'M'
+
+    def __init__(
+        self,
+        metadata_name: str,
+        *,
+        pid: Optional[int] = None,
+        tid: Optional[int] = None,
+        **kwargs,
+    ):
+        super().__init__(metadata_name, pid=pid, tid=tid, **kwargs)
 
 
 class TraceEventFlowStart(TraceEvent):

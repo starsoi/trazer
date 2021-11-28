@@ -35,12 +35,13 @@ def to_tef_event_dict(trace_event: TraceEvent, time_unit: str = 'ms') -> Dict[st
         }.items()
         if not k.startswith('_') and k != 'tef'
     }
-    if time_unit == 'ms':
-        tef_event_dict['ts'] *= 1e3
-    elif time_unit == 'us':
-        tef_event_dict['ts'] *= 1e6
-    elif time_unit == 'ns':
-        tef_event_dict['ts'] *= 1e9
+    if 'ts' in tef_event_dict:
+        if time_unit == 'ms':
+            tef_event_dict['ts'] *= 1e3
+        elif time_unit == 'us':
+            tef_event_dict['ts'] *= 1e6
+        elif time_unit == 'ns':
+            tef_event_dict['ts'] *= 1e9
     return tef_event_dict
 
 

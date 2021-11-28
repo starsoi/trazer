@@ -4,6 +4,7 @@ from .trace import (
     TraceEventDurationEnd,
     TraceEventCounter,
     TraceEventInstant,
+    TraceEventMetadata,
     TraceEventFlowStart,
     TraceEventFlowEnd,
     EventChain,

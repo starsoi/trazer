@@ -1,9 +1,12 @@
+import pytest
+
 from trazer import (
     Trace,
     TraceEventDurationBegin,
     TraceEventDurationEnd,
     TraceEventCounter,
     TraceEventInstant,
+    TraceEventMetadata,
     TraceEventFlowStart,
     TraceEventFlowEnd,
 )
@@ -134,6 +137,28 @@ def test_json_export():
     assert readback['traceEvents'][1] == event1_end.tef
     assert readback['traceEvents'][2] == event2.tef
     assert readback['traceEvents'][3] == trace.metadata_events[0].tef
+
+
+def test_metadata_event():
+    event_process = TraceEventMetadata('process_name', pid=123, name='test process')
+    event_thread = TraceEventMetadata(
+        'thread_name', pid=456, tid=1000, name='test thread'
+    )
+    with pytest.raises(TypeError):
+        # For pid and tid, keyword arguments must be used
+        TraceEventMetadata('process_name', 123, 456, name='test process')
+
+    process_tef = event_process.tef
+    assert process_tef['ph'] == 'M'
+    assert process_tef['pid'] == 123
+    assert 'tid' not in process_tef
+    assert process_tef['args']['name'] == 'test process'
+
+    thread_tef = event_thread.tef
+    assert thread_tef['ph'] == 'M'
+    assert thread_tef['pid'] == 456
+    assert thread_tef['tid'] == 1000
+    assert thread_tef['args']['name'] == 'test thread'
 
 
 def test_set_process_name():
