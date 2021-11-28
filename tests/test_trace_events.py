@@ -4,9 +4,12 @@ from trazer import (
     TraceEventDurationEnd,
     TraceEventCounter,
     TraceEventInstant,
+    TraceEventFlowStart,
+    TraceEventFlowEnd,
 )
 from trazer.trace import TraceEvent
 from trazer.export import to_tef_event_dict
+from tests.utils import setup_trace
 
 
 def test_trace_event_base_tef():
@@ -162,8 +165,6 @@ def test_set_process_name():
             if (event.pid, event.tid) == (200, 100):
                 assert event.args == {'name': 'process2_thread'}
 
-    trace.to_tef_json(open('test.json', 'w'))
-
 
 def test_time_unit_conversion():
     event = TraceEventDurationEnd('event1', 1)
@@ -171,3 +172,28 @@ def test_time_unit_conversion():
     assert to_tef_event_dict(event, 'ms')['ts'] == 1e3
     assert to_tef_event_dict(event, 'us')['ts'] == 1e6
     assert to_tef_event_dict(event, 'ns')['ts'] == 1e9
+
+
+def test_flow_event():
+    """This test needs to be verified manually in Perfetto
+    Expected flows:
+    - From 1st event000 to 2nd event001
+    - From 1st event001 to 2nd event000
+    - From 1st event001 to 2nd event001
+    """
+    event_start = TraceEventFlowStart('flow', 123, 100)
+    event_end = TraceEventFlowEnd('flow', 456, 100)
+    assert event_start.tef['ph'] == 's'
+    assert event_end.tef['ph'] == 'f'
+    assert event_start.tef['id'] == 100
+    assert event_end.tef['id'] == 100
+
+    trace = setup_trace(n_repeat=3)
+    trace.add_flow('flow1', trace.events[1], trace.events[6])
+    trace.add_flow('flow2', trace.events[1], trace.events[7])
+    trace.add_flow('flow3', trace.events[0], trace.events[7])
+
+    trace.set_process_name(0, 'test process')
+    trace.set_thread_name(0, 0, 'test thread')
+
+    trace.to_tef_json(open('test.json', 'w'))

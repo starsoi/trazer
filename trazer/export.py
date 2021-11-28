@@ -11,6 +11,8 @@ _TEF_MANDATORY_PROPS: Dict[Type[TraceEvent], Dict[str, Any]] = {
     trace.TraceEventCounter: {'ph': 'C'},
     trace.TraceEventInstant: {'ph': 'i', 's': 'g'},
     trace.TraceEventMetadata: {'ph': 'M'},
+    trace.TraceEventFlowStart: {'ph': 's'},
+    trace.TraceEventFlowEnd: {'ph': 'f'},
 }
 
 

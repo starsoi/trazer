@@ -15,10 +15,12 @@ class Trace(object):
         * ``events``: A list of trace events, which has the insertion order of the contained trace events.
         * ``process_name``: Mapping from process id to process name
         * ``thread_name``: Mapping from the pair of (process id, thread id) to thread name
+        * ``flow_ids``: Mapping from the flow name to flow id
         """
         self.events: List[TraceEvent] = []
         self.process_names: Dict[int, str] = {}
         self.thread_names: Dict[Tuple[int, int], str] = {}
+        self.flow_ids: Dict[str, int] = {}
 
     def add_event(self, event: TraceEvent):
         """Add a trace event into the trace.
@@ -72,6 +74,36 @@ class Trace(object):
             for (pid, tid), t_name in self.thread_names.items()
         ]
         return p_metadata + t_metadata
+
+    def add_flow(
+        self, name: str, src: TraceEventDurationBegin, dest: TraceEventDurationBegin
+    ):
+        """Add a flow from one duration to another.
+        It is a little bit tricky to derive the timestamps for the flow events.
+        The start and end points of the flow need to be bound to "slices",
+        i.e. the duration bars in the trace visualization.
+        The exact slice to be bound to is determined by the timestamp of the respective flow event.
+
+        The general rule is:
+        - The start point is bound to the most recent enclosing slice, if multiple slices cover the start timestamp.
+        - The end point is bound to the next slice that begins, which is closest to the end timestamp.
+
+        For Perfetto v20.1, the end timestamp needs to be strictly smaller than the slice to be bound to.
+
+        :param name: The name of the flow.
+        :param src: The begin of the source duration.
+        :param dest: The begin of the destination duration.
+        :return: None
+        """
+        flow_id = self.flow_ids.setdefault(
+            name, len(self.flow_ids)
+        )  # Simple counter-based generation of flow id.
+        flow_event_start = TraceEventFlowStart(name, src.ts, flow_id)
+
+        # Make the timestamp of the flow end tiny bit earlier than that of the destination duration.
+        flow_event_end = TraceEventFlowEnd(name, dest.ts - 1e-9, flow_id)
+        self.add_event(flow_event_start)
+        self.add_event(flow_event_end)
 
     def to_tef_json(
         self, file_like: Optional[IO[str]] = None
@@ -183,17 +215,24 @@ class TraceEventMetadata(TraceEvent):
 
 
 class TraceEventFlowStart(TraceEvent):
+    """A ``TraceEvent`` representing the start of a flow."""
+
     _shortname = 's'
 
     def __init__(self, name: str, ts: float, id_: int, **kwargs):
-        super().__init__(name, ts)
+        super().__init__(name, ts, **kwargs)
         self.id = id_
 
 
 class TraceEventFlowEnd(TraceEvent):
+    """A ``TraceEvent`` representing the end of a flow."""
+
     _shortname = 'f'
 
     def __init__(self, name: str, ts: float, id_: int, **kwargs):
+        super().__init__(name, ts, **kwargs)
+        self.id = id_
+
 
 def _validate_property_access(func):
     """Validate the access to the properties of EventChain."""
