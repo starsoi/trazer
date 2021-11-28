@@ -182,6 +182,19 @@ class TraceEventMetadata(TraceEvent):
             del self.tid
 
 
+class TraceEventFlowStart(TraceEvent):
+    _shortname = 's'
+
+    def __init__(self, name: str, ts: float, id_: int, **kwargs):
+        super().__init__(name, ts)
+        self.id = id_
+
+
+class TraceEventFlowEnd(TraceEvent):
+    _shortname = 'f'
+
+    def __init__(self, name: str, ts: float, id_: int, **kwargs):
+
 def _validate_property_access(func):
     """Validate the access to the properties of EventChain."""
 
