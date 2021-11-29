@@ -98,10 +98,12 @@ class Trace(object):
         flow_id = self.flow_ids.setdefault(
             name, len(self.flow_ids)
         )  # Simple counter-based generation of flow id.
-        flow_event_start = TraceEventFlowStart(name, src.ts, flow_id)
+        flow_event_start = TraceEventFlowStart(name, src.ts, src.pid, src.tid, flow_id)
 
         # Make the timestamp of the flow end tiny bit earlier than that of the destination duration.
-        flow_event_end = TraceEventFlowEnd(name, dest.ts - 1e-9, flow_id)
+        flow_event_end = TraceEventFlowEnd(
+            name, dest.ts - 1e-9, dest.pid, dest.tid, flow_id
+        )
         self.add_event(flow_event_start)
         self.add_event(flow_event_end)
 
@@ -183,6 +185,16 @@ class TraceEventDurationBegin(TraceEvent):
 
     _shortname = 'B'
 
+    def __init__(
+        self,
+        event_name: str,
+        ts: float,
+        pid: int = 0,
+        tid: int = 0,
+        **kwargs,
+    ):
+        super().__init__(event_name, ts, pid=pid, tid=tid, **kwargs)
+
 
 class TraceEventDurationEnd(TraceEvent):
     """A ``TraceEvent`` representing the end of an event with certain duration.
@@ -191,6 +203,16 @@ class TraceEventDurationEnd(TraceEvent):
     """
 
     _shortname = 'E'
+
+    def __init__(
+        self,
+        event_name: str,
+        ts: float,
+        pid: int = 0,
+        tid: int = 0,
+        **kwargs,
+    ):
+        super().__init__(event_name, ts, pid=pid, tid=tid, **kwargs)
 
 
 class TraceEventCounter(TraceEvent):
@@ -230,8 +252,8 @@ class TraceEventFlowStart(TraceEvent):
 
     _shortname = 's'
 
-    def __init__(self, name: str, ts: float, id_: int, **kwargs):
-        super().__init__(name, ts, **kwargs)
+    def __init__(self, name: str, ts: float, pid: int, tid: int, id_: int, **kwargs):
+        super().__init__(name, ts, pid=pid, tid=tid, **kwargs)
         self.id = id_
 
 
@@ -240,8 +262,8 @@ class TraceEventFlowEnd(TraceEvent):
 
     _shortname = 'f'
 
-    def __init__(self, name: str, ts: float, id_: int, **kwargs):
-        super().__init__(name, ts, **kwargs)
+    def __init__(self, name: str, ts: float, pid: int, tid: int, id_: int, **kwargs):
+        super().__init__(name, ts, pid=pid, tid=tid, **kwargs)
         self.id = id_
 
 
