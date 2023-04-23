@@ -2,7 +2,7 @@ from collections import defaultdict
 from enum import Enum
 import math
 import re
-from typing import Any, Dict, IO, List, Optional, Type, Tuple
+from typing import Any, IO, Type
 from trazer.trace import (
     Trace,
     TraceEventDurationBegin,
@@ -27,7 +27,7 @@ class _EventNameNotFoundError(Exception):
 
 
 class TraceAnalyzer(object):
-    _event_type_codes: Dict[Type, str] = {
+    _event_type_codes: dict[Type, str] = {
         TraceEventDurationBegin: _EventTypeCode.BEGIN.value,
         TraceEventDurationEnd: _EventTypeCode.END.value,
     }
@@ -40,14 +40,14 @@ class TraceAnalyzer(object):
         :param trace: The trace to be analyzed.
         """
         self.trace = trace  # Original trace to be analyzed
-        self.event_chains: List[EventChain] = []
+        self.event_chains: list[EventChain] = []
         # Map the tuple (begin event, end event) to the corresponding event chain
-        self._event_chain_index: Dict[Tuple[TraceEvent, TraceEvent], EventChain] = {}
+        self._event_chain_index: dict[tuple[TraceEvent, TraceEvent], EventChain] = {}
         self._n_codes_per_event_name = 0
-        self.event_name_codes: Dict[str, str] = self._create_event_name_codes()
+        self.event_name_codes: dict[str, str] = self._create_event_name_codes()
         self.events_string: str = self._create_events_string()
 
-    def _validate_event_name(self, event_names: List[str]) -> None:
+    def _validate_event_name(self, event_names: list[str]) -> None:
         """Validates all the event names and raises ValueError if any invalid event name is found in the trace.
         Trace Analyzer has some limitation to the allowed characters in the event name, i.e. all symbols used for the
         `event_type_codes` are not allowed to appear in the event name.
@@ -66,7 +66,7 @@ class TraceAnalyzer(object):
                     f'Invalid event name: "{event_name}". Characters ({", ".join(invalid_characters)}) are not allowed.'
                 )
 
-    def _create_event_name_codes(self) -> Dict[str, str]:
+    def _create_event_name_codes(self) -> dict[str, str]:
         """Encode event names into short alphabetic letters.
         The case-sensitive letters A-Z and a-z are used, which are used to represent 1st-26th and 27th-52th event names.
         For example,
@@ -111,9 +111,9 @@ class TraceAnalyzer(object):
 
     def _create_wildcard_patterns(
         self,
-        encoded_subpatterns: List[List[Tuple[str, str]]],
+        encoded_subpatterns: list[list[tuple[str, str]]],
         exclusive_wildcard: bool = True,
-    ) -> List[str]:
+    ) -> list[str]:
         r"""Return the pattern to replace the wildcard in the user event pattern.
         The pattern equivalent to the wildcard '*' is a non-capturing group in the form:
         (?:A[\+\-]|B[\+\-]|C[\+\-])
@@ -234,7 +234,7 @@ class TraceAnalyzer(object):
         # Split the event pattern by wildcard symbol
         # E.g. 'event1+event2+*event3-*event4-' is splitted into a list of subpatterns
         # ['event1+event2+', 'event3-', 'event4-']
-        subpatterns: List[str] = event_pattern.split(_EventTypeCode.WILDCARD.value)
+        subpatterns: list[str] = event_pattern.split(_EventTypeCode.WILDCARD.value)
 
         # Get a list of match objects for each subpattern
         # E.g.
@@ -243,7 +243,7 @@ class TraceAnalyzer(object):
         #   [<Match object for 'event3-'>],
         #   [<Match object for 'event4-']
         # ]
-        matches: List[List[re.Match]] = [
+        matches: list[list[re.Match]] = [
             list(self._re_event.finditer(subpattern)) for subpattern in subpatterns
         ]
         if any(
@@ -271,7 +271,7 @@ class TraceAnalyzer(object):
         #   [('C', '-')],
         #   [('D', '-')]
         # ]
-        encoded_subpatterns: List[List[Tuple[str, str]]] = []
+        encoded_subpatterns: list[list[tuple[str, str]]] = []
         # Iterate through all subpatterns
         for i, m_one_subpattern in enumerate(matches):
             encoded_subpatterns.append([])
@@ -311,7 +311,7 @@ class TraceAnalyzer(object):
 
     def _map_string_index_to_event(
         self, event_string_index: int
-    ) -> Tuple[int, TraceEvent]:
+    ) -> tuple[int, TraceEvent]:
         """Map the index of the ``events_string`` to the represented trace event object.
         The length of a single event in the ``events_string`` is always ``_n_codes_per_event_name + 1``.
         Therefore, ``event_string_index // (_n_codes_per_event_name + 1)`` is the index of the corresponding
@@ -325,7 +325,7 @@ class TraceAnalyzer(object):
 
     def match(
         self, event_pattern: str, event_chain_name: str, exclusive_wildcard: bool = True
-    ) -> List[EventChain]:
+    ) -> list[EventChain]:
         """Match a specific event sequence by the given ``event_pattern``.
         A new ``EventChain`` is created for each matched event sequence and is added into the ``event_chains``
         attribute.
@@ -390,10 +390,12 @@ class TraceAnalyzer(object):
             encoded_event_pattern = self._encode_event_pattern(
                 event_pattern, exclusive_wildcard
             )
-        except _EventNameNotFoundError:  # Break early if event name in the pattern cannot be found in the trace.
+        except (
+            _EventNameNotFoundError
+        ):  # Break early if event name in the pattern cannot be found in the trace.
             return []
 
-        matched_event_chains: List[EventChain] = []  # New and updated event chains.
+        matched_event_chains: list[EventChain] = []  # New and updated event chains.
         for m in re.finditer(encoded_event_pattern, self.events_string):
             first_event_index, _ = self._map_string_index_to_event(m.start(1))
             last_event_index, _ = self._map_string_index_to_event(
@@ -422,8 +424,8 @@ class TraceAnalyzer(object):
         return matched_event_chains
 
     def to_tef_json(
-        self, event_chain_pid: int, file_like: Optional[IO[str]] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, event_chain_pid: int, file_like: IO[str] | None = None
+    ) -> dict[str, Any] | None:
         """Merge the event chains with the original trace so that they can be visualized in the same view.
         Each of the event chain is represented as a pair of begin and end events.
         Export the merged trace in Trace Event Format JSON.
