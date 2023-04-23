@@ -1,4 +1,5 @@
 .idea/
+.venv/
 docs/build
 build/
 dist/
