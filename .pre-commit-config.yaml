@@ -1,12 +1,12 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 21.5b1
+    rev: 23.3.0
     hooks:
     - id: black
       args: [--skip-string-normalization]
 
-  - repo: https://gitlab.com/PyCQA/flake8
-    rev: 3.9.2
+  - repo: https://github.com/PyCQA/flake8.git
+    rev: 6.0.0
     hooks:
     -   id: flake8
 
