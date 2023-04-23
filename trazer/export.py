@@ -1,10 +1,10 @@
-from typing import Any, Dict, IO, List, Optional, Type, Union
+from typing import Any, IO, Type
 from trazer import Trace
 import trazer.trace as trace
 from trazer.trace import TraceEvent
 
 
-_TEF_MANDATORY_PROPS: Dict[Type[TraceEvent], Dict[str, Any]] = {
+_TEF_MANDATORY_PROPS: dict[Type[TraceEvent], dict[str, Any]] = {
     trace.TraceEvent: {},
     trace.TraceEventDurationBegin: {'ph': 'B'},
     trace.TraceEventDurationEnd: {'ph': 'E'},
@@ -16,7 +16,7 @@ _TEF_MANDATORY_PROPS: Dict[Type[TraceEvent], Dict[str, Any]] = {
 }
 
 
-def to_tef_event_dict(trace_event: TraceEvent, time_unit: str = 'ms') -> Dict[str, Any]:
+def to_tef_event_dict(trace_event: TraceEvent, time_unit: str = 'ms') -> dict[str, Any]:
     """Export the attributes of a TraceEvent instance to a dict.
     All public attributes of TraceEvent are exported.
     The exported timestamp is converted to the unit specified by ``time_unit``.
@@ -46,11 +46,11 @@ def to_tef_event_dict(trace_event: TraceEvent, time_unit: str = 'ms') -> Dict[st
 
 
 def to_tef_json(
-    trace_or_event: Union[Trace, TraceEvent],
-    *traces_or_events: Union[Trace, TraceEvent],
+    trace_or_event: Trace | TraceEvent,
+    *traces_or_events: Trace | TraceEvent,
     display_time_unit: str = 'ms',
-    file_like: Optional[IO[str]] = None
-) -> Optional[Dict[str, Any]]:
+    file_like: IO[str] | None = None
+) -> dict[str, Any] | None:
     """Export the trace to a JSON corresponding to the
     `Trace Event Format <https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview>`_
 
@@ -67,7 +67,7 @@ def to_tef_json(
     import json
 
     # Prepare the JSON dict
-    tef_trace_events: List[Dict] = []
+    tef_trace_events: list[dict] = []
     tef_dict = {'traceEvents': tef_trace_events, 'displayTimeUnit': display_time_unit}
 
     # Collect the tef dicts of provided events
