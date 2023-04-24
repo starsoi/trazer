@@ -1,6 +1,6 @@
 from __future__ import annotations
 from functools import wraps
-from typing import Any, Dict, IO, List, Iterable, Tuple, Optional
+from typing import Any, IO, Iterable
 from abc import ABC
 
 
@@ -17,10 +17,10 @@ class Trace(object):
         * ``thread_name``: Mapping from the pair of (process id, thread id) to thread name
         * ``flow_ids``: Mapping from the flow name to flow id
         """
-        self.events: List[TraceEvent] = []
-        self.process_names: Dict[int, str] = {}
-        self.thread_names: Dict[Tuple[int, int], str] = {}
-        self.flow_ids: Dict[str, int] = {}
+        self.events: list[TraceEvent] = []
+        self.process_names: dict[int, str] = {}
+        self.thread_names: dict[tuple[int, int], str] = {}
+        self.flow_ids: dict[str, int] = {}
 
     def add_event(self, event: TraceEvent):
         """Add a trace event into the trace.
@@ -59,7 +59,7 @@ class Trace(object):
         self.thread_names[(pid, tid)] = name
 
     @property
-    def metadata_events(self) -> List[TraceEventMetadata]:
+    def metadata_events(self) -> list[TraceEventMetadata]:
         """Get a list of metadata events for the trace.
         It contains the metadata events for process and thread names.
 
@@ -107,9 +107,7 @@ class Trace(object):
         self.add_event(flow_event_start)
         self.add_event(flow_event_end)
 
-    def to_tef_json(
-        self, file_like: Optional[IO[str]] = None
-    ) -> Optional[Dict[str, Any]]:
+    def to_tef_json(self, file_like: IO[str] | None = None) -> dict[str, Any] | None:
         """Get the JSON in Trace Event Format
         The string can be written into a JSON file for the visualization in Chrome ```chrome://tracing```.
 
@@ -133,9 +131,9 @@ class TraceEvent(ABC):
     def __init__(
         self,
         event_name: str,
-        ts: Optional[float] = None,
-        pid: Optional[int] = None,
-        tid: Optional[int] = None,
+        ts: float | None = None,
+        pid: int | None = None,
+        tid: int | None = None,
         **kwargs,
     ):
         """Initialize a trace event.
@@ -240,8 +238,8 @@ class TraceEventMetadata(TraceEvent):
         self,
         metadata_name: str,
         *,
-        pid: Optional[int] = None,
-        tid: Optional[int] = None,
+        pid: int | None = None,
+        tid: int | None = None,
         **kwargs,
     ):
         super().__init__(metadata_name, pid=pid, tid=tid, **kwargs)
